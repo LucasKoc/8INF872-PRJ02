@@ -100,3 +100,10 @@ InitTestScene*.unity*
 
 .idea/*
 .DS_Store
+
+# AR Plug-ins
+Library/*
+Logs/*
+Temp/*
+Build/*
+
