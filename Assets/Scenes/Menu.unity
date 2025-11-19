@@ -214,6 +214,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 111394143}
+        m_TargetAssemblyTypeName: ui_audio_manager, Assembly-CSharp
+        m_MethodName: JouerSonClic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &39135247
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -267,6 +279,7 @@ GameObject:
   - component: {fileID: 111394140}
   - component: {fileID: 111394141}
   - component: {fileID: 111394142}
+  - component: {fileID: 111394143}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -422,7 +435,7 @@ AudioSource:
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -504,6 +517,20 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &111394143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 111394135}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 532c7bac14bc0494d889913937cd36ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ui_audio_manager
+  audio_source_ui: {fileID: 111394142}
+  son_clic: {fileID: 8300000, guid: 807c6dd94c3ac8d4daf384236155416f, type: 3}
 --- !u!1 &236212351
 GameObject:
   m_ObjectHideFlags: 0
@@ -590,6 +617,18 @@ MonoBehaviour:
       - m_Target: {fileID: 111394141}
         m_TargetAssemblyTypeName: voitures_choix_manager, Assembly-CSharp
         m_MethodName: VoitureSuivante
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 111394143}
+        m_TargetAssemblyTypeName: ui_audio_manager, Assembly-CSharp
+        m_MethodName: JouerSonClic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -723,6 +762,18 @@ MonoBehaviour:
       - m_Target: {fileID: 111394140}
         m_TargetAssemblyTypeName: menu_manager, Assembly-CSharp
         m_MethodName: OuvrirCredits
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 111394143}
+        m_TargetAssemblyTypeName: ui_audio_manager, Assembly-CSharp
+        m_MethodName: JouerSonClic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2503,6 +2554,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 111394143}
+        m_TargetAssemblyTypeName: ui_audio_manager, Assembly-CSharp
+        m_MethodName: JouerSonClic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1253620551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2790,7 +2853,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1304060747}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 111394143}
+        m_TargetAssemblyTypeName: ui_audio_manager, Assembly-CSharp
+        m_MethodName: JouerSonClic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1304060747
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4181,6 +4256,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 111394143}
+        m_TargetAssemblyTypeName: ui_audio_manager, Assembly-CSharp
+        m_MethodName: JouerSonClic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1894109127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4516,6 +4603,18 @@ MonoBehaviour:
       - m_Target: {fileID: 111394140}
         m_TargetAssemblyTypeName: menu_manager, Assembly-CSharp
         m_MethodName: OuvrirChoixVoiture
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 111394143}
+        m_TargetAssemblyTypeName: ui_audio_manager, Assembly-CSharp
+        m_MethodName: JouerSonClic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
