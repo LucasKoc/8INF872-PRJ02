@@ -19,6 +19,11 @@ public class menu_manager : MonoBehaviour
     [SerializeField] private GameObject groupe_options;
     [SerializeField] private GameObject groupe_credits;
 
+    [Header("Musique")]
+    [SerializeField] private AudioSource audio_source;
+    [SerializeField] private AudioClip musique_menu;
+    [SerializeField] private AudioClip musique_choix_voiture;
+
     private void Start()
     {
         InitialiserEtat();
@@ -32,6 +37,8 @@ public class menu_manager : MonoBehaviour
         if (panel_choix_voiture != null) panel_choix_voiture.SetActive(false);
 
         FermerToutesLesVues();
+
+        JouerMusique(musique_menu);
     }
 
     private void FermerToutesLesVues()
@@ -48,6 +55,22 @@ public class menu_manager : MonoBehaviour
     {
         if (bouton_jouer != null) bouton_jouer.SetActive(actif);
         if (groupe_boutons != null) groupe_boutons.SetActive(actif);
+    }
+
+    // ================== GESTION MUSIQUE ==================
+
+    private void JouerMusique(AudioClip clip)
+    {
+        if (audio_source == null || clip == null)
+            return;
+
+        if (audio_source.clip == clip && audio_source.isPlaying)
+            return;
+
+        audio_source.Stop();
+        audio_source.clip = clip;
+        audio_source.loop = true;
+        audio_source.Play();
     }
 
     // ================== OPTIONS ==================
@@ -107,6 +130,8 @@ public class menu_manager : MonoBehaviour
         if (panel_choix_voiture != null) panel_choix_voiture.SetActive(false);
 
         FermerToutesLesVues();
+
+        JouerMusique(musique_menu);
     }
 
     public void OuvrirChoixVoiture()
@@ -115,5 +140,7 @@ public class menu_manager : MonoBehaviour
 
         if (panel_menu != null) panel_menu.SetActive(false);
         if (panel_choix_voiture != null) panel_choix_voiture.SetActive(true);
+
+        JouerMusique(musique_choix_voiture);
     }
 }
