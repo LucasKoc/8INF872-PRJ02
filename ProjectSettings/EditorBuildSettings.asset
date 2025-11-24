@@ -6,8 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/ARTestScene.unity
-    guid: e839b459764e44037b2133a9438fbdf4
+    path: Assets/Scenes/Gameplay_Sandbox.unity
+    guid: 8b6476223b00149e1a0caff3706d224f
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 448bc76cd896d4261aaf45096d9658bc, type: 2}
     UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 09c3f35c6afed407295406fcd7b4d2c6, type: 2}
