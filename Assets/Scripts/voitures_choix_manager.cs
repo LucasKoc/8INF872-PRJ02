@@ -28,11 +28,17 @@ public class voitures_choix_manager : MonoBehaviour
     [Tooltip("Bouton 'Déverrouiller' affiché quand la voiture est verrouillée.")]
     [SerializeField] private GameObject bouton_deverrouiller;
 
+    [Header("Bouton Jouer")]
+    [Tooltip("Bouton 'Jouer' utilisé pour lancer la partie avec la voiture sélectionnée.")]
+    [SerializeField] private Button bouton_jouer;
+
     [Header("Etat de sélection")]
     [SerializeField] private int indexSelectionne = 0;
 
     private void Start()
     {
+        PlayerPrefs.DeleteAll(); // A SUPPRIMER !!!! SOUVENIRS VOITURES DEVEROUILLEES
+
         if (voituresSprites == null || voituresSprites.Length == 0)
         {
             Debug.LogError("Aucune voiture définie dans voituresSprites !");
@@ -119,6 +125,18 @@ public class voitures_choix_manager : MonoBehaviour
         if (bouton_deverrouiller != null)
             bouton_deverrouiller.SetActive(!estDebloquee);
 
+        if (image_voiture_centre != null)
+        {
+            Color c = image_voiture_centre.color;
+            c.a = estDebloquee ? 1f : 0.4f;
+            image_voiture_centre.color = c;
+        }
+
+        if (bouton_jouer != null)
+        {
+            bouton_jouer.interactable = estDebloquee;
+        }
+
         PlayerPrefs.SetInt("index_voiture_selectionnee", indexSelectionne);
         PlayerPrefs.Save();
     }
@@ -173,14 +191,12 @@ public class voitures_choix_manager : MonoBehaviour
 
     public void LancerJeuAvecVoitureSelectionnee()
     {
-
-        // POUR LA SUITE
-
-
         if (!voituresDebloquees[indexSelectionne])
         {
             Debug.Log("Cette voiture est verrouillée, impossible de jouer avec.");
             return;
         }
+
+        // POUR LA SUITE : chargement de scène avec la voiture sélectionnée
     }
 }
