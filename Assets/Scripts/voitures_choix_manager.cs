@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-
 public class voitures_choix_manager : MonoBehaviour
 {
     [Header("Données voitures")]
@@ -14,11 +13,20 @@ public class voitures_choix_manager : MonoBehaviour
 
     [Header("UI principale")]
     [SerializeField] private Image image_voiture_centre;
-	[SerializeField] private TMP_Text texte_nom_voiture;
-
+    [SerializeField] private TMP_Text texte_nom_voiture;
 
     [Header("Miniatures (toutes les voitures visibles)")]
     [SerializeField] private Image[] miniatures_voitures;
+
+    [Header("Déverrouillage")]
+    [Tooltip("État de déverrouillage des voitures (true = débloquée). Même longueur que voituresSprites.")]
+    [SerializeField] private bool[] voituresDebloquees;
+
+    [Tooltip("Image du cadenas affichée sur la voiture verrouillée.")]
+    [SerializeField] private Image image_cadenas;
+
+    [Tooltip("Bouton 'Déverrouiller' affiché quand la voiture est verrouillée.")]
+    [SerializeField] private GameObject bouton_deverrouiller;
 
     [Header("Etat de sélection")]
     [SerializeField] private int indexSelectionne = 0;
@@ -41,9 +49,31 @@ public class voitures_choix_manager : MonoBehaviour
             }
         }
 
+        InitialiserEtatDebloque();
         indexSelectionne = Mathf.Clamp(indexSelectionne, 0, voituresSprites.Length - 1);
+
         MettreAJourAffichage();
     }
+
+    // ================== INITIALISATION DEBLOCAGE ==================
+
+    private void InitialiserEtatDebloque()
+    {
+        if (voituresDebloquees == null || voituresDebloquees.Length != voituresSprites.Length)
+        {
+            voituresDebloquees = new bool[voituresSprites.Length];
+        }
+
+        for (int i = 0; i < voituresSprites.Length; i++)
+        {
+            int valeurParDefaut = (i == 0) ? 1 : 0;
+            int etatSauvegarde = PlayerPrefs.GetInt("voiture_debloquee_" + i, valeurParDefaut);
+
+            voituresDebloquees[i] = (etatSauvegarde == 1);
+        }
+    }
+
+    // ================== AFFICHAGE ==================
 
     private void MettreAJourAffichage()
     {
@@ -65,7 +95,11 @@ public class voitures_choix_manager : MonoBehaviour
                 {
                     miniatures_voitures[i].sprite = voituresSprites[i];
 
-                    if (i == indexSelectionne)
+                    if (!voituresDebloquees[i])
+                    {
+                        miniatures_voitures[i].color = new Color(0.6f, 0.6f, 0.6f, 0.7f);
+                    }
+                    else if (i == indexSelectionne)
                     {
                         miniatures_voitures[i].color = Color.white;
                     }
@@ -77,9 +111,19 @@ public class voitures_choix_manager : MonoBehaviour
             }
         }
 
+        bool estDebloquee = voituresDebloquees[indexSelectionne];
+
+        if (image_cadenas != null)
+            image_cadenas.gameObject.SetActive(!estDebloquee);
+
+        if (bouton_deverrouiller != null)
+            bouton_deverrouiller.SetActive(!estDebloquee);
+
         PlayerPrefs.SetInt("index_voiture_selectionnee", indexSelectionne);
         PlayerPrefs.Save();
     }
+
+    // ================== NAVIGATION ==================
 
     public void VoitureSuivante()
     {
@@ -107,8 +151,36 @@ public class voitures_choix_manager : MonoBehaviour
         MettreAJourAffichage();
     }
 
+    // ================== DEVERROUILLAGE ==================
+
+    public void DeverrouillerVoitureCourante()
+    {
+        if (indexSelectionne < 0 || indexSelectionne >= voituresDebloquees.Length)
+            return;
+
+        if (voituresDebloquees[indexSelectionne])
+            return;
+
+        voituresDebloquees[indexSelectionne] = true;
+
+        PlayerPrefs.SetInt("voiture_debloquee_" + indexSelectionne, 1);
+        PlayerPrefs.Save();
+
+        MettreAJourAffichage();
+    }
+
+    // ================== LANCEMENT JEU ==================
+
     public void LancerJeuAvecVoitureSelectionnee()
     {
-        // A REMPLIR PLUS TARD LOL
+
+        // POUR LA SUITE
+
+
+        if (!voituresDebloquees[indexSelectionne])
+        {
+            Debug.Log("Cette voiture est verrouillée, impossible de jouer avec.");
+            return;
+        }
     }
 }
