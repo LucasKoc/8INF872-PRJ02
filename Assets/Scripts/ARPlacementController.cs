@@ -7,19 +7,18 @@ using UnityEngine.XR.ARSubsystems;
 public class ARPlacementController : MonoBehaviour
 {
     [Header("AR")] public ARRaycastManager raycastManager;
-    public ARPlaneManager planeManager;
 
-    [Header("Prefabs")] public GameObject circuitPrefab;
+    [Header("Circuit Prefabs")] public GameObject circuitPrefab;
     public GameObject carPrefab;
+
+    [Header("Placement Indicator")] public GameObject placementIndicator;
 
     [Header("UI")] public Button placeButton;
     public Button resetButton;
 
-    [Header("Placement")] public float distanceFromCamera = 1f;
 
-    [Header("Placement Indicator")] public GameObject placementIndicator;
-
-    [Header("Auto Scale")] public bool autoScaleCircuit = true;
+    [Header("Circuit Properties")] public bool autoScaleCircuit = true;
+    public float distanceFromCamera = 1f;
 
     private GameObject previewInstance;
 
