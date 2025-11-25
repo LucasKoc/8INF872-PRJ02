@@ -15,6 +15,7 @@ public class ARPlacementController : MonoBehaviour
 
     [Header("UI")] public Button placeButton;
     public Button resetButton;
+    public Button readyButton;
 
 
     [Header("Circuit Properties")] public bool autoScaleCircuit = true;
@@ -33,14 +34,27 @@ public class ARPlacementController : MonoBehaviour
     private void Start()
     {
         if (placeButton != null)
+        {
             placeButton.onClick.AddListener(PlaceCircuit);
+            placeButton.gameObject.SetActive(true);
+        }
+
 
         if (resetButton != null)
+        {
             resetButton.onClick.AddListener(ResetPlacement);
+            resetButton.gameObject.SetActive(false);
+        }
 
-        // Au début : on peut placer, mais pas reset
-        if (placeButton != null) placeButton.gameObject.SetActive(true);
-        if (resetButton != null) resetButton.gameObject.SetActive(false);
+        if (readyButton != null)
+        {
+            readyButton.onClick.AddListener(() =>
+            {
+                Debug.Log("Ready button clicked.");
+                // TODO : Ajouter ici la logique pour démarrer la course ou passer à l'étape suivante
+            });
+            readyButton.gameObject.SetActive(false);
+        }
 
         // Placement indicator
         if (placementIndicator != null) placementIndicator.SetActive(false);
@@ -131,6 +145,7 @@ public class ARPlacementController : MonoBehaviour
         // Désactiver l'indicateur et changement des bouttons
         if (placeButton != null) placeButton.gameObject.SetActive(false);
         if (resetButton != null) resetButton.gameObject.SetActive(true);
+        if (readyButton != null) readyButton.gameObject.SetActive(true);
         if (placementIndicator != null) placementIndicator.SetActive(false);
 
         Debug.Log("Circuit + voiture placés en AR.");
@@ -146,6 +161,7 @@ public class ARPlacementController : MonoBehaviour
 
         if (placeButton != null) placeButton.gameObject.SetActive(true);
         if (resetButton != null) resetButton.gameObject.SetActive(false);
+        if (readyButton != null) readyButton.gameObject.SetActive(false);
 
         Debug.Log("Placement AR réinitialisé.");
     }
