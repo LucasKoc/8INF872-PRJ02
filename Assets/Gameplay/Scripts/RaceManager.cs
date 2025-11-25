@@ -1,11 +1,20 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class RaceManager : MonoBehaviour
+public class RaceManager : NetworkBehaviour
 {
     [Header("Références")]
     public LapCounter lapCounter;
     public SimpleCarController playerCar;
 
+    public override void OnNetworkSpawn()
+    {
+        if (!IsServer) return;
+
+        // Exemple : démarrer un timer, mettre à zéro les tours, etc.
+        lapCounter.currentLap=0; 
+    }
+    
     private void Start()
     {
         if (lapCounter == null)
@@ -13,12 +22,6 @@ public class RaceManager : MonoBehaviour
             // On essaie de le retrouver dans la scène
             lapCounter = FindObjectOfType<LapCounter>();
             Debug.Log("RaceManager : LapCounter automatiquement assigné.");
-        }
-
-        if (playerCar == null)
-        {
-            playerCar = FindObjectOfType<SimpleCarController>();
-            Debug.Log("RaceManager : SimpleCarController automatiquement assigné.");
         }
 
         if (lapCounter == null)
@@ -34,6 +37,8 @@ public class RaceManager : MonoBehaviour
 
     private void Update()
     {
+        if (!IsServer) return;
+        
         if (lapCounter == null)
             return;
 

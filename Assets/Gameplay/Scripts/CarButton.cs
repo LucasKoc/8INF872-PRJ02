@@ -32,21 +32,6 @@ public class CarButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
     private void SetPressed(bool pressed)
     {
         if (car == null) return;
-
-        switch (buttonType)
-        {
-            case ButtonType.Left:
-                car.pressingLeft = pressed;
-                break;
-            case ButtonType.Right:
-                car.pressingRight = pressed;
-                break;
-            case ButtonType.Forward:
-                car.pressingForward = pressed;
-                break;
-            case ButtonType.Reverse:
-                car.pressingReverse = pressed;
-                break;
-        }
+        car.SendInput(buttonType, pressed);
     }
 }
