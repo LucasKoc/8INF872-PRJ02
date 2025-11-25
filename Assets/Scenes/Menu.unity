@@ -417,6 +417,7 @@ GameObject:
   - component: {fileID: 111394142}
   - component: {fileID: 111394143}
   - component: {fileID: 111394144}
+  - component: {fileID: 111394145}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -561,6 +562,7 @@ MonoBehaviour:
   bouton_deverrouiller: {fileID: 1397037247}
   bouton_jouer: {fileID: 0}
   indexSelectionne: 0
+  pub_manager: {fileID: 111394145}
 --- !u!82 &111394142
 AudioSource:
   m_ObjectHideFlags: 0
@@ -689,6 +691,22 @@ MonoBehaviour:
   audio_source_ui: {fileID: 111394142}
   slider_volume_musique: {fileID: 2025054220}
   slider_volume_effets: {fileID: 503302176}
+--- !u!114 &111394145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 111394135}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02e4a7a7d4c495f478fde13d4024b581, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::publicite_manager
+  androidGameId: 5987231
+  iOSGameId: 5987230
+  testMode: 1
+  rewardedPlacementId: Rewarded_Android
 --- !u!1 &113246318
 GameObject:
   m_ObjectHideFlags: 0
@@ -1215,9 +1233,9 @@ RectTransform:
   - {fileID: 335620974}
   m_Father: {fileID: 408717699}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 325, y: -375}
   m_SizeDelta: {x: 650, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &257123777
@@ -1646,7 +1664,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &381361347
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4477,7 +4495,7 @@ MonoBehaviour:
         m_CallState: 2
       - m_Target: {fileID: 111394141}
         m_TargetAssemblyTypeName: voitures_choix_manager, Assembly-CSharp
-        m_MethodName: DeverrouillerVoitureCourante
+        m_MethodName: BoutonDeverrouillerAvecPub
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -5172,7 +5190,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1678373386
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5544,9 +5562,9 @@ RectTransform:
   - {fileID: 2094302330}
   m_Father: {fileID: 408717699}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 325, y: -675}
   m_SizeDelta: {x: 650, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1842957569
@@ -5809,9 +5827,9 @@ RectTransform:
   - {fileID: 1467801441}
   m_Father: {fileID: 408717699}
   m_LocalEulerAnglesHint: {x: 5, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 325, y: -75}
   m_SizeDelta: {x: 650, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1894109126

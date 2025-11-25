@@ -35,6 +35,9 @@ public class voitures_choix_manager : MonoBehaviour
     [Header("Etat de sélection")]
     [SerializeField] private int indexSelectionne = 0;
 
+    [SerializeField] private publicite_manager pub_manager;
+
+
     private void Start()
     {
         PlayerPrefs.DeleteAll(); // A SUPPRIMER !!!! SOUVENIRS VOITURES DEVEROUILLEES
@@ -186,6 +189,22 @@ public class voitures_choix_manager : MonoBehaviour
 
         MettreAJourAffichage();
     }
+
+    public void BoutonDeverrouillerAvecPub()
+    {
+        if (pub_manager == null)
+        {
+            Debug.LogError("publicite_manager n'est pas assigné !");
+            return;
+        }
+
+        // On demande une pub rewarded, et quand elle est terminée on déverrouille
+        pub_manager.MontrerPubRewarded(() =>
+        {
+            DeverrouillerVoitureCourante();
+        });
+    }
+
 
     // ================== LANCEMENT JEU ==================
 
