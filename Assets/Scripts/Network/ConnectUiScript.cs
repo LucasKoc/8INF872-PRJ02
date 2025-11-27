@@ -25,7 +25,7 @@ public class ConnectUI : MonoBehaviour
     private void StartAsHost()
     {
         string localIp = GetLocalIPAddress();
-        localIpText.text = $"Your IP: {localIp}:{port}";
+        localIpText.text = $"Adresse serveur: {localIp}";
         localIpText.enabled = true;
 
         var transport = (UnityTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
