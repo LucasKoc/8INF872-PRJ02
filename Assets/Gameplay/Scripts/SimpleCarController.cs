@@ -1,7 +1,8 @@
+using Unity.Netcode;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class SimpleCarController : MonoBehaviour
+public class SimpleCarController : NetworkBehaviour
 {
     [Header("Réglages vitesse")]
     public float acceleration = 60f;
@@ -16,11 +17,21 @@ public class SimpleCarController : MonoBehaviour
     public float sideFriction = 20f;
 
     [Header("État des boutons (remplis par l’UI)")]
-    [HideInInspector] public bool pressingLeft = false;
-    [HideInInspector] public bool pressingRight = false;
-    [HideInInspector] public bool pressingForward = false;
-    [HideInInspector] public bool pressingReverse = false;
+    public NetworkVariable<bool> pressingLeft = new NetworkVariable<bool>(default, 
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
 
+    public NetworkVariable<bool> pressingRight = new NetworkVariable<bool>(default,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
+
+    public NetworkVariable<bool> pressingForward = new NetworkVariable<bool>(default,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
+
+    public NetworkVariable<bool> pressingReverse = new NetworkVariable<bool>(default,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
     private Rigidbody rb;
 
     void Awake()
@@ -29,19 +40,33 @@ public class SimpleCarController : MonoBehaviour
         rb.interpolation = RigidbodyInterpolation.Interpolate;
     }
 
+    public override void OnNetworkSpawn()
+    {
+        if (IsOwner)
+        {
+            foreach (CarButton button in FindObjectsOfType<CarButton>())
+            {
+                button.car = this;
+            }
+        }
+    }
+    
     void FixedUpdate()
     {
+        // n'autoriser les inputs QUE pour la voiture du joueur local
+        if (!IsOwner) return;
+        
         // 1) Vélocité locale : avant/arrière = z, glisse latérale = x
         Vector3 localVel = transform.InverseTransformDirection(rb.linearVelocity);
 
         // 2) Vitesse cible en avant ou en arrière
         float targetSpeed = 0f;
 
-        if (pressingForward)
+        if (pressingForward.Value)
         {
             targetSpeed = maxForwardSpeed;
         }
-        else if (pressingReverse)
+        else if (pressingReverse.Value)
         {
             targetSpeed = -maxReverseSpeed;
         }
@@ -53,7 +78,7 @@ public class SimpleCarController : MonoBehaviour
 
         // Si on appuie : accel (accélération normale)
         // Si on n’appuie pas : braking (frein moteur plus fort)
-        float accel = (pressingForward || pressingReverse) ? acceleration : braking;
+        float accel = (pressingForward.Value || pressingReverse.Value) ? acceleration : braking;
 
         // Faire tendre la vitesse actuelle vers la vitesse cible
         localVel.z = Mathf.MoveTowards(localVel.z, targetSpeed, accel * Time.fixedDeltaTime);
@@ -66,8 +91,8 @@ public class SimpleCarController : MonoBehaviour
 
         // 4) Direction (gauche / droite)
         float steerInput = 0f;
-        if (pressingLeft) steerInput -= 1f;
-        if (pressingRight) steerInput += 1f;
+        if (pressingLeft.Value) steerInput -= 1f;
+        if (pressingRight.Value) steerInput += 1f;
 
         // On ne tourne que si on a un peu de vitesse
         float speedFactor = Mathf.Clamp01(Mathf.Abs(localVel.z) / maxForwardSpeed);
@@ -83,5 +108,34 @@ public class SimpleCarController : MonoBehaviour
             Quaternion turn = Quaternion.Euler(0f, rotation * directionSign, 0f);
             rb.MoveRotation(rb.rotation * turn);
         }
+    }
+    
+    public void SendInput(CarButton.ButtonType type, bool pressed)
+    {
+        if (!IsOwner) return;
+
+        bool left = pressingLeft.Value;
+        bool right = pressingRight.Value;
+        bool forward = pressingForward.Value;
+        bool reverse = pressingReverse.Value;
+
+        switch (type)
+        {
+            case CarButton.ButtonType.Left: left = pressed; break;
+            case CarButton.ButtonType.Right: right = pressed; break;
+            case CarButton.ButtonType.Forward: forward = pressed; break;
+            case CarButton.ButtonType.Reverse: reverse = pressed; break;
+        }
+
+        SetInputsServerRpc(left, right, forward, reverse);
+    }
+    
+    [ServerRpc]
+    public void SetInputsServerRpc(bool left, bool right, bool forward, bool reverse)
+    {
+        pressingLeft.Value = left;
+        pressingRight.Value = right;
+        pressingForward.Value = forward;
+        pressingReverse.Value = reverse;
     }
 }
