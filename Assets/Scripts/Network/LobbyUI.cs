@@ -49,11 +49,14 @@ public class LobbyUI : NetworkBehaviour
     [Header("Navigation")]
     public Button backButton;
 
+    [Header("Game Rules")]
+    [SerializeField] private int maxPlayers = 3;
+    public static int GameLaps = 3;
+
     // Scène précédente pour le bouton "Retour" lorsque dans le MainMenuPanel
     public string previousSceneName = "MainMenuScene"; // TODO : Changer lorsque le menu principal sera implémenté
 
     // Nombre de tours global pour la partie
-    public static int GameLaps = 3;
     private NetworkVariable<int> netGameLaps = new NetworkVariable<int>(
         3,
         NetworkVariableReadPermission.Everyone,
@@ -342,9 +345,6 @@ public class LobbyUI : NetworkBehaviour
 
     private void SetupHostUi()
     {
-        if (hostTitleText != null)
-            hostTitleText.text = "Création d'une partie";
-
         if (hostStatusText != null)
             hostStatusText.text = ""; // rien, ou "Prêt à démarrer"
 
@@ -355,6 +355,8 @@ public class LobbyUI : NetworkBehaviour
             settingsButton.gameObject.SetActive(true);
         if (startGameButton != null)
             startGameButton.gameObject.SetActive(true);
+
+        UpdateLobbyTitleWithCount();
     }
 
 
@@ -499,9 +501,6 @@ public class LobbyUI : NetworkBehaviour
         ulong hostId = NetworkManager.ServerClientId;
         string hostName = GetDisplayNameForClient(hostId);
 
-        if (hostTitleText != null)
-            hostTitleText.text = $"Partie de : {hostName}";
-
         if (hostStatusText != null)
             hostStatusText.text = "En attente du host";
 
@@ -515,6 +514,8 @@ public class LobbyUI : NetworkBehaviour
             settingsButton.gameObject.SetActive(false);
         if (startGameButton != null)
             startGameButton.gameObject.SetActive(false);
+
+        UpdateLobbyTitleWithCount();
     }
 
     // ---------- 3. Callbacks Netcode ----------
@@ -522,6 +523,24 @@ public class LobbyUI : NetworkBehaviour
     private void HandleClientConnected(ulong clientId)
     {
         var nm = NetworkManager.Singleton;
+
+        // --- Vérification côté serveur : lobby plein ? ---
+        if (nm.IsServer)
+        {
+            int currentCount = nm.ConnectedClientsIds.Count; // host + clients (y compris celui qui vient d'arriver)
+
+            if (currentCount > maxPlayers)
+            {
+                int allowedCount = Mathf.Min(maxPlayers, currentCount - 1); // nb de joueurs déjà dans la partie
+                string reason = $"Lobby plein ({allowedCount}/{maxPlayers} joueurs)";
+
+                Debug.Log($"{reason}. On refuse le client {clientId}.");
+
+                // ⚠surcharge avec "reason" -> sera dispo côté client via DisconnectReason
+                nm.DisconnectClient(clientId, reason);
+                return;
+            }
+        }
 
         if (nm.IsHost)
         {
@@ -575,13 +594,21 @@ public class LobbyUI : NetworkBehaviour
         // --- Côté CLIENT ---
         if (clientId == nm.LocalClientId)
         {
+            string reason = nm.DisconnectReason;
+
             // Nous (client) venons d'être déconnectés du serveur
             if (joinErrorText != null)
             {
                 joinErrorText.enabled = true;
                 joinErrorText.fontStyle = FontStyles.Normal;
 
-                if (leftManually)
+                if (!string.IsNullOrEmpty(reason))
+                {
+                    // Message d'erreur prédéfinie - e.g. "Lobby plein (...)"
+                    joinErrorText.text = reason;
+                    joinErrorText.color = Color.red;
+                }
+                else if (leftManually)
                 {
                     // Cas : on a appuyé sur "Retour" dans le hostPanel
                     joinErrorText.text = "Vous avez quitté la partie.";
@@ -601,8 +628,9 @@ public class LobbyUI : NetworkBehaviour
                 }
             }
 
+            // Reinitialisation des états
             isConnecting = false;
-            leftManually = false; // reset du flag
+            leftManually = false;
 
             // On réactive les contrôles pour permettre de se reconnecter à autre chose
             if (connectButton != null)
@@ -632,6 +660,38 @@ public class LobbyUI : NetworkBehaviour
         int rand = (int)(hash % 10000); // 0..9999
 
         return $"Joueur{rand:0000}";
+    }
+
+    private int GetCurrentPlayerCount()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm != null && nm.IsListening)
+        {
+            return nm.ConnectedClientsIds.Count;  // host + clients
+        }
+        return 0;
+    }
+
+    private void UpdateLobbyTitleWithCount()
+    {
+        if (hostTitleText == null) return;
+
+        int count = GetCurrentPlayerCount();
+
+        var nm = NetworkManager.Singleton;
+
+        if (nm != null && nm.IsHost)
+        {
+            // Côté host
+            hostTitleText.text = $"Création d'une partie ({count}/{maxPlayers})";
+        }
+        else if (nm != null && nm.IsClient)
+        {
+            // Côté client : on affiche aussi le nom du host
+            ulong hostId = NetworkManager.ServerClientId;
+            string hostName = GetDisplayNameForClient(hostId);
+            hostTitleText.text = $"Partie de : {hostName} ({count}/{maxPlayers})";
+        }
     }
 
     private void RefreshPlayersList()
@@ -665,6 +725,7 @@ public class LobbyUI : NetworkBehaviour
                 entry.color = Color.white;
             }
         }
+        UpdateLobbyTitleWithCount();
     }
 
 

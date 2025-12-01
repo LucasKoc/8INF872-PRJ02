@@ -2690,6 +2690,7 @@ MonoBehaviour:
   closeSettingsButton: {fileID: 1042149560}
   port: 7777
   backButton: {fileID: 786139780}
+  maxPlayers: 1
   previousSceneName: MainMenuScene
 --- !u!114 &809523923
 MonoBehaviour:
