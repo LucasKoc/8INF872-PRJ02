@@ -139,26 +139,33 @@ public class ARPlacementController : MonoBehaviour
         spawnedCircuit = Instantiate(circuitPrefab, placementPose.position, placementPose.rotation);
 
         // Auto-scale pour lui faire tenir dans le rectangle
-        AutoScaleCircuitToIndicator(spawnedCircuit);
+        float circuitScale = AutoScaleCircuitToIndicator(spawnedCircuit);
 
-        // Recherche du point de spawn de la voiture dans le circuit et instanciation de la voiture
-        Transform spawnPoint = spawnedCircuit.transform.Find("StartArea").transform.Find("CarSpawnPoint 1");
-        spawnedCar = Instantiate(carPrefab, spawnPoint.position, spawnPoint.rotation, spawnedCircuit.transform);
-
-        // Lien avec Race Manager
+        // --- Lien avec RaceManager (circuit + spawn points) ---
         if (raceManager == null)
-        {
             raceManager = FindObjectOfType<RaceManager>();
-        }
 
         if (raceManager != null)
         {
             LapCounter lc = spawnedCircuit.GetComponentInChildren<LapCounter>();
-            SimpleCarController carCtrl = spawnedCar.GetComponent<SimpleCarController>();
 
-            raceManager.RegisterTrackAndCar(lc, carCtrl);
+            Transform startArea = spawnedCircuit.transform.Find("StartArea");
+            var spawnPoints = new System.Collections.Generic.List<Transform>();
 
-            Debug.Log($"[ARPlacement] Références passées au RaceManager. LapCounter={lc}, Car={carCtrl}");
+            for (int i = 1; i <= 3; i++)
+            {
+                Transform sp = startArea.Find($"CarSpawnPoint {i}");
+                if (sp != null) spawnPoints.Add(sp);
+            }
+
+            if (raceManager != null &&
+                NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.IsServer)
+            {
+                raceManager.RegisterTrack(lc, spawnPoints.ToArray(), circuitScale);
+            }
+
+            Debug.Log($"[ARPlacement] Track enregistré : LapCounter={lc}, SpawnPoints={spawnPoints.Count}");
         }
         else
         {
@@ -171,7 +178,12 @@ public class ARPlacementController : MonoBehaviour
         if (readyButton != null) readyButton.gameObject.SetActive(true);
         if (placementIndicator != null) placementIndicator.SetActive(false);
 
-        Debug.Log("Circuit + voiture placés en AR.");
+        Debug.Log("Circuit placé en AR.");
+        // --- Pour ce joueur : dire aux voitures quel est SON circuit local ---
+        foreach (var follower in FindObjectsOfType<CarVisualFollower>())
+        {
+            follower.localCircuit = spawnedCircuit.transform;
+        }
     }
 
     public void ResetPlacement()
@@ -198,28 +210,15 @@ public class ARPlacementController : MonoBehaviour
             raceManager = FindObjectOfType<RaceManager>();
             Debug.Log($"[ARPlacement] raceManager recherché : {(raceManager != null ? "trouvé" : "null")}");
         }
-        else
-        {
-            Debug.Log("[ARPlacement] raceManager déjà assigné.");
-        }
 
         if (NetworkManager.Singleton == null)
         {
             Debug.LogWarning("[ARPlacement] NetworkManager.Singleton est NULL dans ARace_Game !");
-        }
-        else
-        {
-            Debug.Log($"[ARPlacement] NetworkManager OK. IsHost={NetworkManager.Singleton.IsHost} IsServer={NetworkManager.Singleton.IsServer} IsClient={NetworkManager.Singleton.IsClient}");
-        }
-
-        if (raceManager != null)
-        {
-            Debug.Log($"[ARPlacement] RaceManager IsSpawned={raceManager.IsSpawned}");
+            return;
         }
 
         if (raceManager != null &&
-            NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.IsListening &&
+            NetworkManager.Singleton.IsClient &&
             raceManager.IsSpawned)
         {
             Debug.Log("[ARPlacement] Appel de SetReadyServerRpc()");
@@ -230,18 +229,18 @@ public class ARPlacementController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[ARPlacement] Condition RPC non remplie (RaceManager null / pas spawn / NetworkManager nul ou pas en écoute).");
+            Debug.LogWarning("[ARPlacement] Condition RPC non remplie.");
         }
     }
 
-    private void AutoScaleCircuitToIndicator(GameObject circuit)
+    private float AutoScaleCircuitToIndicator(GameObject circuit)
     {
-        if (!autoScaleCircuit) return;
-        if (placementIndicator == null) return;
+        if (!autoScaleCircuit) return 1f;
+        if (placementIndicator == null) return 1f;
 
         // On récupère tous les MeshRenderer du circuit
         var renderers = circuit.GetComponentsInChildren<MeshRenderer>();
-        if (renderers.Length == 0) return;
+        if (renderers.Length == 0) return 1f;
 
         // Bounds du circuit en WORLD space
         Bounds circuitBounds = renderers[0].bounds;
@@ -255,7 +254,7 @@ public class ARPlacementController : MonoBehaviour
 
         // Bounds du rectangle d’indicateur (il a un MeshRenderer si c’est un Quad/Plane)
         var indicatorRenderer = placementIndicator.GetComponentInChildren<MeshRenderer>();
-        if (indicatorRenderer == null) return;
+        if (indicatorRenderer == null) return 1f;
 
         Bounds indicatorBounds = indicatorRenderer.bounds;
         float targetWidth = indicatorBounds.size.x;
@@ -269,7 +268,6 @@ public class ARPlacementController : MonoBehaviour
         // Appliquer l’échelle *par dessus l’échelle actuelle*
         circuit.transform.localScale *= scaleFactor;
 
-        // Debug.Log(
-        //     $"AutoScale : circuit {circuitWidth}x{circuitDepth} -> cible {targetWidth}x{targetDepth}, factor={scaleFactor}");
+        return scaleFactor;
     }
 }

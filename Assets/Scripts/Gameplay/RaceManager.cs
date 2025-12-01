@@ -8,7 +8,16 @@ public class RaceManager : NetworkBehaviour
 {
     [Header("Références")]
     public LapCounter lapCounter;
-    public SimpleCarController playerCar;
+
+    [Header("Voitures")]
+    public GameObject carPrefab;
+    private Transform[] carSpawnPoints;
+    private Dictionary<ulong, SimpleCarController> playerCars =
+        new Dictionary<ulong, SimpleCarController>();
+
+    // circuit de référence côté host
+    private Transform circuitRef;
+    private float trackScale = 1f;
 
     [Header("UI")]
     public TMP_Text countdownText;
@@ -23,7 +32,6 @@ public class RaceManager : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
-    private Coroutine hideCountdownCoroutine;
 
     // État de la course côté réseau
     public NetworkVariable<bool> raceStarted = new NetworkVariable<bool>(
@@ -32,13 +40,47 @@ public class RaceManager : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    // Appelé par ARPlacementController côté host
+    public void RegisterTrack(LapCounter lc, Transform[] spawnPoints, float scale)
+    {
+        lapCounter     = lc;
+        carSpawnPoints = spawnPoints;
+        trackScale     = scale;
+
+        // circuitRef = root du circuit du host
+        if (lc != null)
+            circuitRef = lc.transform.root;   // ou spawnedCircuit.transform côté host
+
+        Debug.Log($"[RaceManager] RegisterTrack -> LapCounter={lapCounter != null}, SpawnPoints={carSpawnPoints?.Length}, trackScale={trackScale}");
+
+        if (IsServer && lapCounter != null)
+        {
+            lapCounter.currentLap = 0;
+            lapCounter.raceFinished = false;
+        }
+    }
+
+
+
     [ServerRpc(RequireOwnership = false)]
     public void SetReadyServerRpc(ServerRpcParams rpcParams = default)
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
         Debug.Log($"[RaceManager] SetReadyServerRpc reçu de {clientId}. IsServer={IsServer}");
 
-        // Si déjà prêt, on ignore
+        if (raceStarted.Value)
+        {
+            Debug.Log("[RaceManager] Course déjà lancée, on ignore.");
+            return;
+        }
+
+        // 1) Si ce client n’a pas encore de voiture, on la crée
+        if (!playerCars.ContainsKey(clientId))
+        {
+            SpawnCarForClient(clientId);
+        }
+
+        // 2) Gestion du ready
         if (!readyClients.Add(clientId))
         {
             Debug.Log($"Client {clientId} était déjà ready.");
@@ -48,25 +90,66 @@ public class RaceManager : NetworkBehaviour
         int connectedCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
         Debug.Log($"Client {clientId} ready ({readyClients.Count}/{connectedCount})");
 
-        if (!countdownRunning && readyClients.Count >= connectedCount)
+        if (countdownRunning) return;
+
+        // SOLO
+        if (connectedCount == 1)
         {
-            Debug.Log("[RaceManager] Tous les joueurs sont prêts, on lance le compte à rebours.");
+            Debug.Log("[RaceManager] Un seul joueur connecté : on lance le compte à rebours.");
+            StartCoroutine(StartRaceCountdown());
+            return;
+        }
+
+        // MULTI
+        if (readyClients.Count >= connectedCount)
+        {
+            Debug.Log("[RaceManager] Tous les joueurs connectés sont prêts, on lance le compte à rebours.");
             StartCoroutine(StartRaceCountdown());
         }
     }
 
-    public void RegisterTrackAndCar(LapCounter lc, SimpleCarController car)
+    private void SpawnCarForClient(ulong clientId)
     {
-        lapCounter = lc;
-        playerCar = car;
-
-        Debug.Log($"[RaceManager] RegisterTrackAndCar -> LapCounter={lapCounter != null}, Car={playerCar != null}");
-
-        // Reset l’état de course côté serveur
-        if (IsServer && lapCounter != null)
+        if (carPrefab == null)
         {
-            lapCounter.currentLap = 0;
-            lapCounter.raceFinished = false;
+            Debug.LogError("[RaceManager] carPrefab n’est pas assigné !");
+            return;
+        }
+        if (carSpawnPoints == null || carSpawnPoints.Length == 0)
+        {
+            Debug.LogError("[RaceManager] Aucun CarSpawnPoint enregistré !");
+            return;
+        }
+
+        int index = playerCars.Count; // 0,1,2,...
+        if (index >= carSpawnPoints.Length)
+            index = carSpawnPoints.Length - 1;
+
+        Transform spawn = carSpawnPoints[index];
+        Debug.Log($"[RaceManager] Spawn car pour client {clientId} au spawn {index}");
+
+        GameObject carObj = Instantiate(carPrefab, spawn.position, spawn.rotation);
+        carObj.transform.localScale *= trackScale;
+
+        var no = carObj.GetComponent<NetworkObject>();
+        if (no == null)
+        {
+            Debug.LogError("[RaceManager] carPrefab n’a pas de NetworkObject !");
+            Destroy(carObj);
+            return;
+        }
+
+        // L’owner est le client
+        no.SpawnWithOwnership(clientId);
+
+        var carCtrl = carObj.GetComponent<SimpleCarController>();
+        if (carCtrl == null)
+        {
+            Debug.LogError("[RaceManager] carPrefab n’a pas de SimpleCarController !");
+        }
+        else
+        {
+            playerCars[clientId] = carCtrl;
         }
     }
 
@@ -88,9 +171,12 @@ public class RaceManager : NetworkBehaviour
         raceStarted.Value = true;
 
         // Autoriser toutes les voitures à rouler
-        foreach (var car in FindObjectsOfType<SimpleCarController>())
+        foreach (var kvp in playerCars)
         {
-            car.canDrive.Value = true;
+            if (kvp.Value != null)
+            {
+                kvp.Value.canDrive.Value = true;
+            }
         }
 
         // On cache le texte après 1 seconde
@@ -114,49 +200,22 @@ public class RaceManager : NetworkBehaviour
             raceStarted.Value = false;
             countdownValue.Value = -1;
 
-            if (lapCounter != null)
-            {
-                lapCounter.currentLap = 0;
-                lapCounter.raceFinished = false;
-            }
+            // On écoute les nouveaux clients qui se connectent - NE DEVRAIS PAS ARRIVER PCQ READY AVANT
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         }
     }
 
-
-    private void Start()
-    {
-        if (lapCounter == null)
-        {
-            // On essaie de le retrouver dans la scène
-            lapCounter = FindObjectOfType<LapCounter>();
-            Debug.Log("RaceManager : LapCounter automatiquement assigné.");
-        }
-
-        if (lapCounter == null)
-        {
-            Debug.LogWarning("RaceManager : aucun LapCounter trouvé !");
-        }
-
-        if (playerCar == null)
-        {
-            Debug.LogWarning("RaceManager : aucune voiture (SimpleCarController) trouvée !");
-        }
-    }
-
-    private void Update()
+    private void OnClientConnected(ulong clientId)
     {
         if (!IsServer) return;
 
-        if (lapCounter == null)
+        // si la piste n'est pas encore posée, on ne fait rien
+        if (carSpawnPoints == null || carSpawnPoints.Length == 0)
             return;
 
-        if (lapCounter.raceFinished)
+        if (!playerCars.ContainsKey(clientId))
         {
-            // Ici plus tard : prévenir l'UI, le réseau, etc.
-            // Pour l’instant, on log juste une fois.
-            Debug.Log("RaceManager : la course est terminée.");
-            // On peut désactiver ce script si on veut éviter les logs répétés
-            enabled = false;
+            SpawnCarForClient(clientId);
         }
     }
 
@@ -169,24 +228,58 @@ public class RaceManager : NetworkBehaviour
     {
         if (countdownText == null) return;
 
-        // -1 → caché
         if (newValue < 0)
         {
             countdownText.gameObject.SetActive(false);
             return;
         }
 
-        // On affiche le texte
         countdownText.gameObject.SetActive(true);
 
         if (newValue > 0)
-        {
-            // 3, 2, 1
             countdownText.text = newValue.ToString();
-        }
-        else // newValue == 0 ➜ GO!
-        {
+        else
             countdownText.text = "GO!";
+    }
+
+    private void Update()
+    {
+        if (!IsServer) return;
+
+        if (lapCounter == null)
+            return;
+
+        if (lapCounter.raceFinished)
+        {
+            Debug.Log("RaceManager : la course est terminée.");
+            enabled = false;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (!IsServer) return;
+        if (circuitRef == null) return;
+
+        foreach (var kvp in playerCars)
+        {
+            SimpleCarController car = kvp.Value;
+            if (car == null) continue;
+
+            NetworkCarState state = car.GetComponent<NetworkCarState>();
+            if (state == null) continue;
+
+            // Position/rotation monde de la voiture sur le host
+            Vector3 worldPos = car.transform.position;
+            Quaternion worldRot = car.transform.rotation;
+
+            // ⇒ Position/rotation locale dans l’espace du circuit
+            Vector3 localPos = circuitRef.InverseTransformPoint(worldPos);
+            Quaternion localRot =
+                Quaternion.Inverse(circuitRef.rotation) * worldRot;
+
+            state.trackLocalPos.Value = localPos;
+            state.trackLocalRot.Value = localRot;
         }
     }
 }
