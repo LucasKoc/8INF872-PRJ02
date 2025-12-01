@@ -100,6 +100,9 @@ public class SimpleCarController : NetworkBehaviour
 
         rb.velocity = transform.TransformDirection(localVel);
 
+        Debug.Log($"vel={rb.velocity} localVel={localVel} forward={transform.forward}");
+
+
         // --- STEERING ---
         float steerInput = 0f;
         if (pressingLeft.Value)  steerInput -= 1f;
