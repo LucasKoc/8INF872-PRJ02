@@ -42,6 +42,12 @@ public class LobbyUI : MonoBehaviour
     [Header("Network")]
     public int port = 7777;
 
+    [Header("Navigation")]
+    public Button backButton;
+
+    // Scène précédente pour le bouton "Retour" lorsque dans le MainMenuPanel
+    public string previousSceneName = "MainMenuScene"; // TODO : Changer lorsque le menu principal sera implémenté
+
     // Nombre de tours global pour la partie
     public static int GameLaps = 3;
 
@@ -82,6 +88,10 @@ public class LobbyUI : MonoBehaviour
 
         // Join UI
         connectButton.onClick.AddListener(OnConnectClicked);
+        if (backButton != null)
+        {
+            backButton.onClick.AddListener(OnBackClicked);
+        }
 
         // Settings UI
         closeSettingsButton.onClick.AddListener(OnCloseSettingsClicked);
@@ -137,6 +147,10 @@ public class LobbyUI : MonoBehaviour
     private void OnSettingsClicked()
     {
         settingsPanel.SetActive(true);
+
+        // Cacher le bouton retour pendant les settings
+        if (backButton != null)
+            backButton.gameObject.SetActive(false);
     }
 
     private void OnCloseSettingsClicked()
@@ -148,6 +162,78 @@ public class LobbyUI : MonoBehaviour
         }
 
         settingsPanel.SetActive(false);
+
+        // Ré-afficher le bouton retour après fermeture des settings
+        if (backButton != null)
+            backButton.gameObject.SetActive(true);
+    }
+
+    private void OnBackClicked()
+    {
+        // 1) Si on est dans JoinPanel -> retour au menu principal
+        if (joinPanel.activeSelf)
+        {
+            if (isConnecting &&
+                NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.IsClient &&
+                !NetworkManager.Singleton.IsHost)
+            {
+                Debug.Log("Annulation de la tentative de connexion, retour au menu principal.");
+                NetworkManager.Singleton.Shutdown();
+                isConnecting = false;
+            }
+
+            joinPanel.SetActive(false);
+            mainMenuPanel.SetActive(true);
+
+            if (joinErrorText != null)
+            {
+                joinErrorText.text = "";
+                joinErrorText.enabled = false;
+            }
+
+            if (ipInputField != null)
+            {
+                ipInputField.text = "";
+            }
+
+            if (connectButton != null) connectButton.interactable = true;
+            if (ipInputField != null) ipInputField.interactable = true;
+
+            return;
+        }
+
+        // 2) Si on est dans HostPanel -> on "clear" le lobby et retour MainMenu
+        if (hostPanel.activeSelf)
+        {
+            Debug.Log("Retour depuis HostPanel : arrêt du host et nettoyage du lobby.");
+
+            // Stopper proprement le NetworkManager (server + clients déconnectés)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+
+            // Vider la liste des joueurs UI
+            foreach (Transform child in playersContainer)
+            {
+                if (child == playerEntryTemplate.transform) continue;
+                Destroy(child.gameObject);
+            }
+
+            // Vider les IDs random
+            clientRandomIds.Clear();
+
+            // Masquer le hostPanel, revenir au menu principal
+            hostPanel.SetActive(false);
+            mainMenuPanel.SetActive(true);
+
+            return;
+        }
+
+        // 3) Dans le MainMenuPanel -> revenir à la scène précédente (menu principal global)
+        // TODO : Envoyer vers le super-lobby lorsque celui-ci sera implémenté
+        Debug.Log("BackButton : aucun panel spécial à quitter (MainMenu).");
     }
 
     // ---------- 1. HOST : créer la partie ----------
