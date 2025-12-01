@@ -51,7 +51,7 @@ public class SimpleCarController : NetworkBehaviour
     {
         if (IsOwner)
         {
-            foreach (CarButton button in FindObjectsOfType<CarButton>())
+            foreach (CarButton button in FindObjectsOfType<CarButton>(true))
             {
                 button.car = this;
             }
