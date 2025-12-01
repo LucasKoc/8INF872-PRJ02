@@ -52,17 +52,7 @@ public class ARPlacementController : MonoBehaviour
 
         if (readyButton != null)
         {
-            readyButton.onClick.AddListener(() =>
-            {
-                Debug.Log("Ready button clicked.");
-                if (readyButton != null)
-                {
-                    readyButton.onClick.AddListener(OnReadyClicked);
-                    // Désactivation des bouttons après clic
-                    readyButton.interactable = false;
-                    resetButton.interactable = false ;
-                }
-            });
+            readyButton.onClick.AddListener(OnReadyClicked);
             readyButton.gameObject.SetActive(false);
         }
 
@@ -127,11 +117,11 @@ public class ARPlacementController : MonoBehaviour
 
     public void PlaceCircuit()
     {
-        if (!placementPoseIsValid)
-        {
-            Debug.Log("Aucun plan valide sous le centre de l'écran.");
-            return;
-        }
+        // if (!placementPoseIsValid)
+        // {
+        //     Debug.Log("Aucun plan valide sous le centre de l'écran.");
+        //     return;
+        // }
 
         if (previewInstance != null)
         {
@@ -152,8 +142,28 @@ public class ARPlacementController : MonoBehaviour
         AutoScaleCircuitToIndicator(spawnedCircuit);
 
         // Recherche du point de spawn de la voiture dans le circuit et instanciation de la voiture
-        Transform spawnPoint = spawnedCircuit.transform.Find("StartArea").transform.Find("CarSpawnPoint");
+        Transform spawnPoint = spawnedCircuit.transform.Find("StartArea").transform.Find("CarSpawnPoint 1");
         spawnedCar = Instantiate(carPrefab, spawnPoint.position, spawnPoint.rotation, spawnedCircuit.transform);
+
+        // Lien avec Race Manager
+        if (raceManager == null)
+        {
+            raceManager = FindObjectOfType<RaceManager>();
+        }
+
+        if (raceManager != null)
+        {
+            LapCounter lc = spawnedCircuit.GetComponentInChildren<LapCounter>();
+            SimpleCarController carCtrl = spawnedCar.GetComponent<SimpleCarController>();
+
+            raceManager.RegisterTrackAndCar(lc, carCtrl);
+
+            Debug.Log($"[ARPlacement] Références passées au RaceManager. LapCounter={lc}, Car={carCtrl}");
+        }
+        else
+        {
+            Debug.LogWarning("[ARPlacement] Aucun RaceManager trouvé dans la scène.");
+        }
 
         // Désactiver l'indicateur et changement des bouttons
         if (placeButton != null) placeButton.gameObject.SetActive(false);
@@ -186,17 +196,41 @@ public class ARPlacementController : MonoBehaviour
         if (raceManager == null)
         {
             raceManager = FindObjectOfType<RaceManager>();
-        }
-
-        if (raceManager != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
-        {
-            raceManager.SetReadyServerRpc();
-            // Empêcher de spammer le bouton Ready
-            readyButton.interactable = false;
+            Debug.Log($"[ARPlacement] raceManager recherché : {(raceManager != null ? "trouvé" : "null")}");
         }
         else
         {
-            Debug.LogWarning("Impossible d'envoyer l'état ready : pas de RaceManager ou pas de NetworkManager.");
+            Debug.Log("[ARPlacement] raceManager déjà assigné.");
+        }
+
+        if (NetworkManager.Singleton == null)
+        {
+            Debug.LogWarning("[ARPlacement] NetworkManager.Singleton est NULL dans ARace_Game !");
+        }
+        else
+        {
+            Debug.Log($"[ARPlacement] NetworkManager OK. IsHost={NetworkManager.Singleton.IsHost} IsServer={NetworkManager.Singleton.IsServer} IsClient={NetworkManager.Singleton.IsClient}");
+        }
+
+        if (raceManager != null)
+        {
+            Debug.Log($"[ARPlacement] RaceManager IsSpawned={raceManager.IsSpawned}");
+        }
+
+        if (raceManager != null &&
+            NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.IsListening &&
+            raceManager.IsSpawned)
+        {
+            Debug.Log("[ARPlacement] Appel de SetReadyServerRpc()");
+            raceManager.SetReadyServerRpc();
+
+            if (readyButton != null) readyButton.interactable = false;
+            if (resetButton != null) resetButton.interactable = false;
+        }
+        else
+        {
+            Debug.LogWarning("[ARPlacement] Condition RPC non remplie (RaceManager null / pas spawn / NetworkManager nul ou pas en écoute).");
         }
     }
 
