@@ -11,10 +11,9 @@ GameObject:
   - component: {fileID: 6730177574634073839}
   - component: {fileID: 2800087445525966074}
   - component: {fileID: 3035883214673603694}
-  - component: {fileID: 6067984589478799850}
   - component: {fileID: 8121749249124571886}
   - component: {fileID: 3918212756141755921}
-  - component: {fileID: 4784062756278604888}
+  - component: {fileID: 3566930942373184327}
   m_Layer: 0
   m_Name: Car
   m_TagString: Player
@@ -90,35 +89,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &6067984589478799850
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8127218697081779359}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b310f04b65d45e5893781887412add2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SimpleCarController
-  ShowTopMostFoldoutHeaderGroup: 1
-  acceleration: 6
-  braking: 2.5
-  maxForwardSpeed: 20
-  maxReverseSpeed: 2.4
-  steering: 180
-  sideFriction: 2
-  pressingLeft:
-    m_InternalValue: 0
-  pressingRight:
-    m_InternalValue: 0
-  pressingForward:
-    m_InternalValue: 0
-  pressingReverse:
-    m_InternalValue: 0
-  canDrive:
-    m_InternalValue: 0
 --- !u!114 &8121749249124571886
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -151,7 +121,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   localCircuit: {fileID: 0}
   visualRoot: {fileID: 0}
---- !u!114 &4784062756278604888
+--- !u!114 &3566930942373184327
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -160,9 +130,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 8127218697081779359}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4a91701c634e94bc08a8494d6277f71f, type: 3}
+  m_Script: {fileID: 11500000, guid: 7b310f04b65d45e5893781887412add2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: '::'
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleCarController
+  ShowTopMostFoldoutHeaderGroup: 1
+  circuitRefHost: {fileID: 0}
+  myCircuitClient: {fileID: 0}
+  visualRoot: {fileID: 0}
+  maxForwardSpeed: 20
+  maxReverseSpeed: 2.4
+  acceleration: 6
+  braking: 2.5
+  steeringSpeed: 90
+  useUnityAxesOnOwner: 0
+  canDrive:
+    m_InternalValue: 0
 --- !u!1001 &9187672292030535605
 PrefabInstance:
   m_ObjectHideFlags: 0

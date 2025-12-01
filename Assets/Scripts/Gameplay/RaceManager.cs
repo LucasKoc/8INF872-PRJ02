@@ -131,6 +131,22 @@ public class RaceManager : NetworkBehaviour
         GameObject carObj = Instantiate(carPrefab, spawn.position, spawn.rotation);
         carObj.transform.localScale *= trackScale;
 
+        // Récupérer le controller
+        var carCtrl = carObj.GetComponent<SimpleCarController>();
+        if (carCtrl == null)
+        {
+            Debug.LogError("[RaceManager] carPrefab n’a pas de SimpleCarController !");
+        }
+        else
+        {
+            // On donne au contrôleur le circuit de référence du host
+            if (circuitRef != null)
+            {
+                carCtrl.InitServerTrack(circuitRef);
+            }
+            playerCars[clientId] = carCtrl;
+        }
+
         var no = carObj.GetComponent<NetworkObject>();
         if (no == null)
         {
@@ -141,16 +157,6 @@ public class RaceManager : NetworkBehaviour
 
         // L’owner est le client
         no.SpawnWithOwnership(clientId);
-
-        var carCtrl = carObj.GetComponent<SimpleCarController>();
-        if (carCtrl == null)
-        {
-            Debug.LogError("[RaceManager] carPrefab n’a pas de SimpleCarController !");
-        }
-        else
-        {
-            playerCars[clientId] = carCtrl;
-        }
     }
 
     private IEnumerator StartRaceCountdown()
@@ -253,33 +259,6 @@ public class RaceManager : NetworkBehaviour
         {
             Debug.Log("RaceManager : la course est terminée.");
             enabled = false;
-        }
-    }
-
-    private void FixedUpdate()
-    {
-        if (!IsServer) return;
-        if (circuitRef == null) return;
-
-        foreach (var kvp in playerCars)
-        {
-            SimpleCarController car = kvp.Value;
-            if (car == null) continue;
-
-            NetworkCarState state = car.GetComponent<NetworkCarState>();
-            if (state == null) continue;
-
-            // Position/rotation monde de la voiture sur le host
-            Vector3 worldPos = car.transform.position;
-            Quaternion worldRot = car.transform.rotation;
-
-            // ⇒ Position/rotation locale dans l’espace du circuit
-            Vector3 localPos = circuitRef.InverseTransformPoint(worldPos);
-            Quaternion localRot =
-                Quaternion.Inverse(circuitRef.rotation) * worldRot;
-
-            state.trackLocalPos.Value = localPos;
-            state.trackLocalRot.Value = localRot;
         }
     }
 }

@@ -184,11 +184,6 @@ public class ARPlacementController : MonoBehaviour
         if (placementIndicator != null) placementIndicator.SetActive(false);
 
         Debug.Log("Circuit placé en AR.");
-        // --- Pour ce joueur : dire aux voitures quel est SON circuit local ---
-        foreach (var follower in FindObjectsOfType<CarVisualFollower>())
-        {
-            follower.localCircuit = spawnedCircuit.transform;
-        }
     }
 
     public void ResetPlacement()

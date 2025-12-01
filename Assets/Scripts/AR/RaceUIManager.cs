@@ -57,7 +57,15 @@ public class RaceUIManager : MonoBehaviour
         foreach (var car in FindObjectsOfType<SimpleCarController>())
         {
             if (car.IsOwner)   // La voiture contrôlée par CE joueur
+            {
+                // On lui donne le circuit AR local si on l’a
+                if (ARPlacementController.LocalCircuit != null)
+                {
+                    car.InitClientTrack(ARPlacementController.LocalCircuit);
+                }
+
                 return car;
+            }
         }
         return null;
     }
