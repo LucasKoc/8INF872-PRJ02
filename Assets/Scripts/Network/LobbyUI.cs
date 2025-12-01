@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
@@ -154,7 +155,7 @@ public class LobbyUI : MonoBehaviour
     private void StartAsHost()
     {
         string localIp = GetLocalIPAddress();
-        hostIpText.text = $"{localIp}:{port}";
+        hostIpText.text = $"{localIp}";
         hostIpText.enabled = true;
 
         var transport = (UnityTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
@@ -181,8 +182,48 @@ public class LobbyUI : MonoBehaviour
 
         string ip = ipInputField.text?.Trim();
 
-        if (string.IsNullOrEmpty(ip) || !IPAddress.TryParse(ip, out var parsedIp)
-                                     || parsedIp.AddressFamily != AddressFamily.InterNetwork)
+        // Validation stricte IPv4 X.X.X.X
+        if (string.IsNullOrEmpty(ip))
+        {
+            joinErrorText.text = "Adresse IP vide.";
+            joinErrorText.color = Color.red;
+            return;
+        }
+
+        string[] parts = ip.Split('.');
+        if (parts.Length != 4)
+        {
+            joinErrorText.text = "Adresse IP invalide (format X.X.X.X).";
+            joinErrorText.color = Color.red;
+            return;
+        }
+
+        foreach (string part in parts)
+        {
+            if (string.IsNullOrEmpty(part))
+            {
+                joinErrorText.text = "Adresse IP invalide (bloc vide).";
+                joinErrorText.color = Color.red;
+                return;
+            }
+
+            if (!int.TryParse(part, out int value))
+            {
+                joinErrorText.text = "Adresse IP invalide (caractères non numériques).";
+                joinErrorText.color = Color.red;
+                return;
+            }
+
+            if (value < 0 || value > 255)
+            {
+                joinErrorText.text = "Adresse IP invalide (valeur hors [0–255]).";
+                joinErrorText.color = Color.red;
+                return;
+            }
+        }
+
+        // Utilisation de IPAddress.TryParse pour validation finale
+        if (!IPAddress.TryParse(ip, out var parsedIp) || parsedIp.AddressFamily != AddressFamily.InterNetwork)
         {
             joinErrorText.text = "Adresse IP invalide.";
             joinErrorText.color = Color.red;
@@ -210,11 +251,57 @@ public class LobbyUI : MonoBehaviour
     private char ValidateIpChar(string currentText, int charIndex, char addedChar)
     {
         // Autoriser seulement 0–9 et '.'
-        if ((addedChar >= '0' && addedChar <= '9') || addedChar == '.')
-            return addedChar;
+        bool isDigit = (addedChar >= '0' && addedChar <= '9');
+        bool isDot   = (addedChar == '.');
 
-        // Tout le reste est refusé (caractère non ajouté)
-        return '\0';
+        if (!isDigit && !isDot)
+            return '\0'; // rejet
+
+        // Si on ajoute un point :
+        if (isDot)
+        {
+            // 1) Pas de point en premier caractère
+            if (currentText.Length == 0)
+                return '\0';
+
+            // 2) Pas de double point ".."
+            if (charIndex > 0 && currentText[charIndex - 1] == '.')
+                return '\0';
+
+            // 3) Max 3 points (4 blocs X.X.X.X)
+            int dotCount = currentText.Count(c => c == '.');
+            if (dotCount >= 3)
+                return '\0';
+
+            return addedChar;
+        }
+
+        // À partir d'ici, c'est un chiffre
+        // On doit vérifier la longueur et la valeur du bloc courant (entre 2 points)
+
+        // Trouver le début du bloc (après le dernier '.')
+        int lastDotIndex = currentText.LastIndexOf('.');
+        int blockStart = lastDotIndex + 1;
+
+        // Longueur actuelle du bloc (avant d'ajouter ce chiffre)
+        int blockLength = currentText.Length - blockStart;
+
+        // 4) Max 3 chiffres par bloc
+        if (blockLength >= 3)
+            return '\0';
+
+        // 5) Vérifier que la valeur du bloc ne dépasse pas 255
+        string currentBlock = currentText.Substring(blockStart);
+        string newBlock = currentBlock.Insert(charIndex - blockStart, addedChar.ToString());
+
+        // newBlock peut être vide si on tape au début, on vérifie juste si parsable
+        if (int.TryParse(newBlock, out int blockValue))
+        {
+            if (blockValue > 255)
+                return '\0';
+        }
+
+        return addedChar;
     }
 
     // ---------- 3. Callbacks Netcode ----------
@@ -293,24 +380,42 @@ public class LobbyUI : MonoBehaviour
 
         foreach (ulong id in ids)
         {
+            // Si ce client n’a pas encore de random ID, on lui en donne un
+            if (!clientRandomIds.ContainsKey(id))
+            {
+                // 0 à 9999 -> affiché en 4 chiffres
+                clientRandomIds[id] = Random.Range(0, 10000);
+            }
+
+            int rand = clientRandomIds[id];
+            string baseName = $"Joueur{rand:0000}";
+
             // On clone le template
             TMP_Text entry = Instantiate(playerEntryTemplate, playersContainer);
             entry.gameObject.SetActive(true);
 
-            string baseName = $"Joueur{id:0000}";
-
             if (id == NetworkManager.Singleton.LocalClientId)
             {
-                // Rajoute "(Vous)" au joueur local et change de couleur pour le différencier
                 entry.text = baseName + " (Vous)";
                 entry.color = Color.red;
             }
             else
             {
                 entry.text = baseName;
+                // Optionnel : couleur par défaut
+                entry.color = Color.white;
             }
         }
+
+        // Nettoyer les IDs des clients qui ne sont plus connectés
+        var connectedSet = ids.ToHashSet();
+        var keysToRemove = clientRandomIds.Keys.Where(k => !connectedSet.Contains(k)).ToList();
+        foreach (var key in keysToRemove)
+        {
+            clientRandomIds.Remove(key);
+        }
     }
+
 
     // ---------- 5. Lancer la partie (host) ----------
 
