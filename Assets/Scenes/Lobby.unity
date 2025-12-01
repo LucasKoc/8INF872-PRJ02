@@ -1005,6 +1005,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4492844391426175106, guid: 91b1c185905794e2e9a4b26e4cca9611, type: 3}
+      propertyPath: NetworkConfig.PlayerPrefab
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5739488660914259094, guid: 91b1c185905794e2e9a4b26e4cca9611, type: 3}
       propertyPath: m_Name
       value: NetworkManager
@@ -2690,7 +2694,7 @@ MonoBehaviour:
   closeSettingsButton: {fileID: 1042149560}
   port: 7777
   backButton: {fileID: 786139780}
-  maxPlayers: 1
+  maxPlayers: 3
   previousSceneName: MainMenuScene
 --- !u!114 &809523923
 MonoBehaviour:
