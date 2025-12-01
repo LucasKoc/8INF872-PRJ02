@@ -49,6 +49,14 @@ public class SimpleCarController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        base.OnNetworkSpawn();
+
+        rb = GetComponent<Rigidbody>();
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+        // Physique uniquement côté serveur
+        rb.isKinematic = !IsServer;
+
         if (IsOwner)
         {
             foreach (CarButton button in FindObjectsOfType<CarButton>(true))
@@ -60,8 +68,8 @@ public class SimpleCarController : NetworkBehaviour
     
     void FixedUpdate()
     {
-        // n'autoriser les inputs QUE pour la voiture du joueur local
-        if (!IsOwner) return;
+        // Physique uniquement sur le serveur
+        if (!IsServer) return;
 
         // Course démarrée ?
         if (!canDrive.Value) return;

@@ -35,6 +35,8 @@ public class ARPlacementController : MonoBehaviour
     // Référence à RaceManager pour ready & go
     private RaceManager raceManager;
 
+    public static Transform LocalCircuit { get; private set; }
+
     private void Start()
     {
         if (placeButton != null)
@@ -140,6 +142,9 @@ public class ARPlacementController : MonoBehaviour
 
         // Auto-scale pour lui faire tenir dans le rectangle
         float circuitScale = AutoScaleCircuitToIndicator(spawnedCircuit);
+
+        // Memoriser le circuit local
+        LocalCircuit = spawnedCircuit.transform;
 
         // --- Lien avec RaceManager (circuit + spawn points) ---
         if (raceManager == null)

@@ -18,7 +18,13 @@ public class CarVisualFollower : NetworkBehaviour
 
     private void Update()
     {
-        // Pas de données, pas de circuit => rien à faire
+        // Tant qu'on n'a pas encore de circuit, on essaie de prendre celui du joueur
+        if (localCircuit == null && ARPlacementController.LocalCircuit != null)
+        {
+            localCircuit = ARPlacementController.LocalCircuit;
+        }
+
+        // Si toujours rien → on ne fait rien (circuit pas encore posé)
         if (state == null || localCircuit == null || visualRoot == null)
             return;
 
