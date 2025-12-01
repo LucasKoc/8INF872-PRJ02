@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+using Unity.Netcode;
 
 public class ARPlacementController : MonoBehaviour
 {
@@ -31,6 +32,9 @@ public class ARPlacementController : MonoBehaviour
     private GameObject spawnedCircuit;
     private GameObject spawnedCar;
 
+    // Référence à RaceManager pour ready & go
+    private RaceManager raceManager;
+
     private void Start()
     {
         if (placeButton != null)
@@ -51,10 +55,19 @@ public class ARPlacementController : MonoBehaviour
             readyButton.onClick.AddListener(() =>
             {
                 Debug.Log("Ready button clicked.");
-                // TODO : Ajouter ici la logique pour démarrer la course ou passer à l'étape suivante
+                if (readyButton != null)
+                {
+                    readyButton.onClick.AddListener(OnReadyClicked);
+                    // Désactivation des bouttons après clic
+                    readyButton.interactable = false;
+                    resetButton.interactable = false ;
+                }
             });
             readyButton.gameObject.SetActive(false);
         }
+
+        // Trouver le RaceManager dans la scène
+        raceManager = FindObjectOfType<RaceManager>();
 
         // Placement indicator
         if (placementIndicator != null) placementIndicator.SetActive(false);
@@ -166,6 +179,27 @@ public class ARPlacementController : MonoBehaviour
         Debug.Log("Placement AR réinitialisé.");
     }
 
+    private void OnReadyClicked()
+    {
+        Debug.Log("Joueur prêt, envoi au serveur...");
+
+        if (raceManager == null)
+        {
+            raceManager = FindObjectOfType<RaceManager>();
+        }
+
+        if (raceManager != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
+        {
+            raceManager.SetReadyServerRpc();
+            // Empêcher de spammer le bouton Ready
+            readyButton.interactable = false;
+        }
+        else
+        {
+            Debug.LogWarning("Impossible d'envoyer l'état ready : pas de RaceManager ou pas de NetworkManager.");
+        }
+    }
+
     private void AutoScaleCircuitToIndicator(GameObject circuit)
     {
         if (!autoScaleCircuit) return;
@@ -201,7 +235,7 @@ public class ARPlacementController : MonoBehaviour
         // Appliquer l’échelle *par dessus l’échelle actuelle*
         circuit.transform.localScale *= scaleFactor;
 
-        Debug.Log(
-            $"AutoScale : circuit {circuitWidth}x{circuitDepth} -> cible {targetWidth}x{targetDepth}, factor={scaleFactor}");
+        // Debug.Log(
+        //     $"AutoScale : circuit {circuitWidth}x{circuitDepth} -> cible {targetWidth}x{targetDepth}, factor={scaleFactor}");
     }
 }

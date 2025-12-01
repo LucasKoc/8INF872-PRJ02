@@ -18,6 +18,15 @@ public class LapCounter : MonoBehaviour
     // index du prochain checkpoint attendu
     private int nextCheckpointIndex = 0;
 
+    void Start()
+    {
+        // Si LobbyUI.GameLaps a été défini dans le lobby
+        if (LobbyUI.GameLaps > 0)
+        {
+            totalLaps = LobbyUI.GameLaps;
+        }
+    }
+
     // Appelée par un checkpoint quand le joueur le traverse
     public void NotifyCheckpointReached(Checkpoint cp)
     {

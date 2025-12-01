@@ -34,6 +34,13 @@ public class SimpleCarController : NetworkBehaviour
         NetworkVariableWritePermission.Server);
     private Rigidbody rb;
 
+    [Header("Race")]
+    public NetworkVariable<bool> canDrive = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -55,6 +62,9 @@ public class SimpleCarController : NetworkBehaviour
     {
         // n'autoriser les inputs QUE pour la voiture du joueur local
         if (!IsOwner) return;
+
+        // Course démarrée ?
+        if (!canDrive.Value) return;
         
         // 1) Vélocité locale : avant/arrière = z, glisse latérale = x
         Vector3 localVel = transform.InverseTransformDirection(rb.linearVelocity);
