@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
@@ -10,7 +9,7 @@ using TMPro;
 using System.Linq;
 using UnityEngine.SceneManagement;
 
-public class LobbyUI : MonoBehaviour
+public class LobbyUI : NetworkBehaviour
 {
     [Header("Panels")]
     public GameObject mainMenuPanel;
@@ -28,6 +27,11 @@ public class LobbyUI : MonoBehaviour
     public Button startGameButton;
     public Transform playersContainer;
     public TMP_Text playerEntryTemplate;
+
+    [Header("Host Panel Texts")]
+    public TMP_Text hostTitleText;
+    public TMP_Text hostStatusText;
+    public TMP_Text hostLapsText;
 
     [Header("Join UI")]
     public TMP_InputField ipInputField;
@@ -50,12 +54,20 @@ public class LobbyUI : MonoBehaviour
 
     // Nombre de tours global pour la partie
     public static int GameLaps = 3;
+    private NetworkVariable<int> netGameLaps = new NetworkVariable<int>(
+        3,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
 
     // État de connexion en cours
     private bool isConnecting = false;
 
-    // Pour garder un nombre random stable par client
-    private readonly Dictionary<ulong, int> clientRandomIds = new Dictionary<ulong, int>();
+    // Le client a quitté volontairement la partie (bouton Retour depuis le hostPanel)
+    private bool leftManually = false;
+
+    // Dernière IP connectée
+    private string lastConnectedIp = "";
 
     private void Start()
     {
@@ -125,11 +137,61 @@ public class LobbyUI : MonoBehaviour
         }
     }
 
+    // ---------- Network ----------
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        // Quand la valeur réseau change → mettre à jour GameLaps + UI
+        netGameLaps.OnValueChanged += OnNetGameLapsChanged;
+
+        if (IsServer)
+        {
+            // Le host est la source de vérité
+            netGameLaps.Value = GameLaps;
+        }
+
+        // Appliquer la valeur actuelle au démarrage (host ET clients)
+        OnNetGameLapsChanged(0, netGameLaps.Value);
+    }
+
+    private void OnDestroy()
+    {
+        // Sécurité pour éviter les leaks d’event
+        netGameLaps.OnValueChanged -= OnNetGameLapsChanged;
+    }
+
+    private void OnNetGameLapsChanged(int previous, int current)
+    {
+        GameLaps = current;
+
+        // Texte dans le panel host / client
+        if (hostLapsText != null)
+            hostLapsText.text = $"Nombre de tours : {GameLaps}";
+
+        // Slider des settings (côté host, principalement)
+        if (lapsSlider != null && Mathf.Abs(lapsSlider.value - current) > 0.01f)
+            lapsSlider.value = current;
+
+        // Valeur à côté du slider
+        if (lapsValueText != null)
+            lapsValueText.text = current.ToString();
+    }
+
 
     // ---------- 0. Navigation UI ----------
 
     private void OnCreateGameClicked()
     {
+        // Settings par défaut
+        GameLaps = 3;
+        if (lapsSlider != null)
+        {
+            lapsSlider.value = GameLaps;
+            OnLapsSliderChanged(lapsSlider.value);
+        }
+
         mainMenuPanel.SetActive(false);
         hostPanel.SetActive(true);
         joinPanel.SetActive(false);
@@ -158,7 +220,18 @@ public class LobbyUI : MonoBehaviour
         if (lapsSlider != null)
         {
             int laps = Mathf.RoundToInt(lapsSlider.value);
-            GameLaps = Mathf.Max(1, laps);
+            laps = Mathf.Max(1, laps);
+
+            // Seul le serveur a le droit de changer la valeur réseau
+            if (IsServer)
+            {
+                netGameLaps.Value = laps;   // déclenche OnNetGameLapsChanged partout
+            }
+            else
+            {
+                // Sécurité (normalement un client n'a pas accès aux settings)
+                GameLaps = laps;
+            }
         }
 
         settingsPanel.SetActive(false);
@@ -203,30 +276,39 @@ public class LobbyUI : MonoBehaviour
             return;
         }
 
-        // 2) Si on est dans HostPanel -> on "clear" le lobby et retour MainMenu
+        // 2) Si on est dans HostPanel -> comportement différent Host / Client
         if (hostPanel.activeSelf)
         {
-            Debug.Log("Retour depuis HostPanel : arrêt du host et nettoyage du lobby.");
-
-            // Stopper proprement le NetworkManager (server + clients déconnectés)
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
+            var nm = NetworkManager.Singleton;
+            if (nm != null)
             {
-                NetworkManager.Singleton.Shutdown();
+                if (nm.IsHost)
+                {
+                    // Cas HOST : on ferme la partie pour tout le monde
+                    Debug.Log("Retour depuis HostPanel (host) : arrêt du host et nettoyage du lobby.");
+
+                    nm.Shutdown();
+
+                    // Vider la liste des joueurs UI
+                    foreach (Transform child in playersContainer)
+                    {
+                        if (child == playerEntryTemplate.transform) continue;
+                        Destroy(child.gameObject);
+                    }
+
+                    hostPanel.SetActive(false);
+                    mainMenuPanel.SetActive(true);
+                }
+                else if (nm.IsClient)
+                {
+                    // Cas CLIENT : on quitte la partie (mais le host reste)
+                    Debug.Log("Retour depuis HostPanel (client) : quitter la partie.");
+
+                    leftManually = true;
+                    nm.Shutdown();
+                    // On NE change PAS ici les panels : on laisse HandleClientDisconnected faire le boulot
+                }
             }
-
-            // Vider la liste des joueurs UI
-            foreach (Transform child in playersContainer)
-            {
-                if (child == playerEntryTemplate.transform) continue;
-                Destroy(child.gameObject);
-            }
-
-            // Vider les IDs random
-            clientRandomIds.Clear();
-
-            // Masquer le hostPanel, revenir au menu principal
-            hostPanel.SetActive(false);
-            mainMenuPanel.SetActive(true);
 
             return;
         }
@@ -255,7 +337,26 @@ public class LobbyUI : MonoBehaviour
 
         // Le host voit déjà sa propre entrée dans la liste
         RefreshPlayersList();
+        SetupHostUi();
     }
+
+    private void SetupHostUi()
+    {
+        if (hostTitleText != null)
+            hostTitleText.text = "Création d'une partie";
+
+        if (hostStatusText != null)
+            hostStatusText.text = ""; // rien, ou "Prêt à démarrer"
+
+        if (hostLapsText != null)
+            hostLapsText.text = $"Nombre de tours : {GameLaps}";
+
+        if (settingsButton != null)
+            settingsButton.gameObject.SetActive(true);
+        if (startGameButton != null)
+            startGameButton.gameObject.SetActive(true);
+    }
+
 
     // ---------- 2. CLIENT : rejoindre la partie ----------
 
@@ -319,6 +420,8 @@ public class LobbyUI : MonoBehaviour
         var transport = (UnityTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
         transport.ConnectionData.Address = ip;
         transport.ConnectionData.Port = (ushort)port;
+
+        lastConnectedIp = ip;
 
         // État "connexion en cours"
         isConnecting = true;
@@ -390,68 +493,146 @@ public class LobbyUI : MonoBehaviour
         return addedChar;
     }
 
+    private void SetupClientHostUi()
+    {
+        var nm = NetworkManager.Singleton;
+        ulong hostId = NetworkManager.ServerClientId;
+        string hostName = GetDisplayNameForClient(hostId);
+
+        if (hostTitleText != null)
+            hostTitleText.text = $"Partie de : {hostName}";
+
+        if (hostStatusText != null)
+            hostStatusText.text = "En attente du host";
+
+        if (hostLapsText != null)
+            hostLapsText.text = $"Nombre de tours : {GameLaps}";
+
+        if (hostIpText != null)
+            hostIpText.text = $"{lastConnectedIp}";
+
+        if (settingsButton != null)
+            settingsButton.gameObject.SetActive(false);
+        if (startGameButton != null)
+            startGameButton.gameObject.SetActive(false);
+    }
+
     // ---------- 3. Callbacks Netcode ----------
 
     private void HandleClientConnected(ulong clientId)
     {
-        // On ne s'intéresse qu'au client local, et pas quand on est Host
-        if (clientId != NetworkManager.Singleton.LocalClientId || NetworkManager.Singleton.IsHost)
+        var nm = NetworkManager.Singleton;
+
+        if (nm.IsHost)
+        {
+            // Côté host : à chaque nouveau client, on rafraîchit juste la liste
+            RefreshPlayersList();
             return;
+        }
 
-        isConnecting = false;
+        // Côté client
+        if (clientId == nm.LocalClientId)
+        {
+            // Nous venons de nous connecter
+            isConnecting = false;
 
-        joinErrorText.enabled = true;
-        joinErrorText.text = "Connecté au serveur.";
-        joinErrorText.color = Color.green;
-        joinErrorText.fontStyle = FontStyles.Normal;
+            joinErrorText.enabled = true;
+            joinErrorText.text = "Connecté au serveur.";
+            joinErrorText.color = Color.green;
+            joinErrorText.fontStyle = FontStyles.Normal;
 
-        // Désactivation des champs
-        if (connectButton != null)
-            connectButton.interactable = false;
-        if (ipInputField != null)
-            ipInputField.interactable = false;
+            if (connectButton != null) connectButton.interactable = false;
+            if (ipInputField != null) ipInputField.interactable = false;
 
-        // Changement de panel
-        hostPanel.SetActive(true);
-        joinPanel.SetActive(false);
+            // On passe à l'écran de partie
+            hostPanel.SetActive(true);
+            joinPanel.SetActive(false);
 
-        RefreshPlayersList();
+            // Adapter l'UI pour un joueur (pas host)
+            SetupClientHostUi();
+
+            RefreshPlayersList();
+        }
+        else
+        {
+            // Un autre joueur s'est connecté -> on met juste à jour la liste
+            RefreshPlayersList();
+        }
     }
 
     private void HandleClientDisconnected(ulong clientId)
     {
-        // On ne s'intéresse qu'au client local, et pas au host
-        if (clientId != NetworkManager.Singleton.LocalClientId || NetworkManager.Singleton.IsHost)
-            return;
+        var nm = NetworkManager.Singleton;
 
-        joinErrorText.enabled = true;
-        joinErrorText.fontStyle = FontStyles.Normal;
-
-        if (isConnecting)
+        // --- Côté HOST ---
+        if (nm.IsHost)
         {
-            // Déconnexion pendant la phase de connexion => erreur
-            joinErrorText.text = "Erreur lors de la connexion.";
+            // Un client a quitté la partie => on met à jour la liste
+            RefreshPlayersList();
+            return;
+        }
+
+        // --- Côté CLIENT ---
+        if (clientId == nm.LocalClientId)
+        {
+            // Nous (client) venons d'être déconnectés du serveur
+            if (joinErrorText != null)
+            {
+                joinErrorText.enabled = true;
+                joinErrorText.fontStyle = FontStyles.Normal;
+
+                if (leftManually)
+                {
+                    // Cas : on a appuyé sur "Retour" dans le hostPanel
+                    joinErrorText.text = "Vous avez quitté la partie.";
+                    joinErrorText.color = Color.gray;
+                }
+                else if (isConnecting)
+                {
+                    // Échec pendant la tentative de connexion
+                    joinErrorText.text = "Erreur lors de la connexion.";
+                    joinErrorText.color = Color.red;
+                }
+                else
+                {
+                    // Cas : host a quitté / fermé la partie
+                    joinErrorText.text = "Partie fermée (hôte déconnecté).";
+                    joinErrorText.color = Color.red;
+                }
+            }
+
+            isConnecting = false;
+            leftManually = false; // reset du flag
+
+            // On réactive les contrôles pour permettre de se reconnecter à autre chose
+            if (connectButton != null)
+                connectButton.interactable = true;
+            if (ipInputField != null)
+                ipInputField.interactable = true;
+
+            // Navigation UI : retour à l'écran "Rejoindre une partie"
+            if (hostPanel != null) hostPanel.SetActive(false);
+            if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+            if (joinPanel != null) joinPanel.SetActive(true);
         }
         else
         {
-            // Déconnexion après coup => connexion fermée
-            joinErrorText.text = "Connexion fermée.";
+            // Un autre client (pas nous) s’est déconnecté => juste refresh liste
+            RefreshPlayersList();
         }
-
-        joinErrorText.color = Color.red;
-        isConnecting = false;
-
-        // On re-permet au joueur de retenter
-        if (connectButton != null)
-            connectButton.interactable = true;
-        if (ipInputField != null)
-            ipInputField.interactable = true;
-
-        // Actualisation côté host et clients
-        RefreshPlayersList();
     }
 
     // ---------- 4. Liste des joueurs ----------
+
+    private string GetDisplayNameForClient(ulong clientId)
+    {
+        // Donne un nombre pseudo-aléatoire stable par clientId
+        long hash = (long)clientId * 1103515245L + 12345L;
+        if (hash < 0) hash = -hash;
+        int rand = (int)(hash % 10000); // 0..9999
+
+        return $"Joueur{rand:0000}";
+    }
 
     private void RefreshPlayersList()
     {
@@ -462,25 +643,18 @@ public class LobbyUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        var ids = NetworkManager.Singleton.ConnectedClientsIds;
+        var nm = NetworkManager.Singleton;
+        var ids = nm.ConnectedClientsIds;
 
         foreach (ulong id in ids)
         {
-            // Si ce client n’a pas encore de random ID, on lui en donne un
-            if (!clientRandomIds.ContainsKey(id))
-            {
-                // 0 à 9999 -> affiché en 4 chiffres
-                clientRandomIds[id] = Random.Range(0, 10000);
-            }
-
-            int rand = clientRandomIds[id];
-            string baseName = $"Joueur{rand:0000}";
+            string baseName = GetDisplayNameForClient(id);
 
             // On clone le template
             TMP_Text entry = Instantiate(playerEntryTemplate, playersContainer);
             entry.gameObject.SetActive(true);
 
-            if (id == NetworkManager.Singleton.LocalClientId)
+            if (id == nm.LocalClientId)
             {
                 entry.text = baseName + " (Vous)";
                 entry.color = Color.red;
@@ -488,17 +662,8 @@ public class LobbyUI : MonoBehaviour
             else
             {
                 entry.text = baseName;
-                // Optionnel : couleur par défaut
                 entry.color = Color.white;
             }
-        }
-
-        // Nettoyer les IDs des clients qui ne sont plus connectés
-        var connectedSet = ids.ToHashSet();
-        var keysToRemove = clientRandomIds.Keys.Where(k => !connectedSet.Contains(k)).ToList();
-        foreach (var key in keysToRemove)
-        {
-            clientRandomIds.Remove(key);
         }
     }
 
