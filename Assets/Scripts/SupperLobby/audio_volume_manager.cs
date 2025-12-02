@@ -17,8 +17,8 @@ public class audio_volume_manager : MonoBehaviour
 
     private void Start()
     {
-        float volumeMusique = PlayerPrefs.GetFloat(PREF_VOLUME_MUSIQUE, 100);
-        float volumeEffets  = PlayerPrefs.GetFloat(PREF_VOLUME_EFFETS, 100);
+        float volumeMusique = PlayerPrefs.GetFloat(PREF_VOLUME_MUSIQUE, 0);
+        float volumeEffets  = PlayerPrefs.GetFloat(PREF_VOLUME_EFFETS, 0);
 
         if (slider_volume_musique != null)
             slider_volume_musique.value = volumeMusique;

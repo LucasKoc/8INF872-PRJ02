@@ -523,7 +523,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::menu_manager
   panel_menu: {fileID: 381361346}
   panel_choix_voiture: {fileID: 1678373385}
-  panel_lobby: {fileID: 0}
   logo: {fileID: 1224630774}
   bouton_jouer: {fileID: 2034775648}
   groupe_boutons: {fileID: 408717698}
@@ -5747,7 +5746,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 100
   m_WholeNumbers: 1
-  m_Value: 70
+  m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
