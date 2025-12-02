@@ -23,6 +23,15 @@ public class RaceUIManager : MonoBehaviour
 
     private void Update()
     {
+        // 0) Toujours donner le circuit AR local à TOUTES les voitures
+        if (ARPlacementController.LocalCircuit != null)
+        {
+            foreach (var car in FindObjectsOfType<SimpleCarController>())
+            {
+                car.InitClientTrack(ARPlacementController.LocalCircuit);
+            }
+        }
+
         // 1) Tant qu’on n’a pas trouvé la voiture locale, on la cherche
         if (!carBound)
         {
@@ -54,16 +63,6 @@ public class RaceUIManager : MonoBehaviour
 
     private SimpleCarController FindLocalCar()
     {
-        // 1) Donner le circuit AR local à TOUTES les voitures de cette scène
-        if (ARPlacementController.LocalCircuit != null)
-        {
-            foreach (var car in FindObjectsOfType<SimpleCarController>())
-            {
-                car.InitClientTrack(ARPlacementController.LocalCircuit);
-            }
-        }
-
-        // 2) Puis trouver la voiture possédée par CE joueur pour les contrôles
         foreach (var car in FindObjectsOfType<SimpleCarController>())
         {
             if (car.IsOwner)   // La voiture contrôlée par CE joueur

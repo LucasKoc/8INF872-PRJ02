@@ -47,9 +47,8 @@ public class RaceManager : NetworkBehaviour
         carSpawnPoints = spawnPoints;
         trackScale     = scale;
 
-        // circuitRef = root du circuit du host
         if (lc != null)
-            circuitRef = lc.transform.root;   // ou spawnedCircuit.transform côté host
+            circuitRef = lc.transform.root;
 
         Debug.Log($"[RaceManager] RegisterTrack -> LapCounter={lapCounter != null}, SpawnPoints={carSpawnPoints?.Length}, trackScale={trackScale}");
 
@@ -57,10 +56,38 @@ public class RaceManager : NetworkBehaviour
         {
             lapCounter.currentLap = 0;
             lapCounter.raceFinished = false;
+
+            // Si la piste vient juste d'être posée alors que tout le monde
+            // était déjà ready, on peut tenter de lancer la course.
+            TryStartRace();
         }
     }
 
+    private void TryStartRace()
+    {
+        if (!IsServer) return;
+        if (countdownRunning || raceStarted.Value) return;
 
+        int connectedCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+        if (connectedCount == 0) return;
+
+        // On attend que la piste du host soit posée
+        if (carSpawnPoints == null || carSpawnPoints.Length == 0)
+        {
+            Debug.Log("[RaceManager] TryStartRace : piste pas encore posée, on attend.");
+            return;
+        }
+
+        // Tous les joueurs connectés doivent être ready
+        if (readyClients.Count < connectedCount)
+        {
+            Debug.Log($"[RaceManager] TryStartRace : {readyClients.Count}/{connectedCount} prêts, on attend.");
+            return;
+        }
+
+        Debug.Log("[RaceManager] Tous prêts ET piste posée → on lance le compte à rebours + spawn des voitures.");
+        StartCoroutine(StartRaceCountdown());
+    }
 
     [ServerRpc(RequireOwnership = false)]
     public void SetReadyServerRpc(ServerRpcParams rpcParams = default)
@@ -74,38 +101,17 @@ public class RaceManager : NetworkBehaviour
             return;
         }
 
-        // 1) Si ce client n’a pas encore de voiture, on la crée
-        if (!playerCars.ContainsKey(clientId))
-        {
-            SpawnCarForClient(clientId);
-        }
-
-        // 2) Gestion du ready
+        // On marque ce client comme "ready"
         if (!readyClients.Add(clientId))
         {
             Debug.Log($"Client {clientId} était déjà ready.");
             return;
         }
 
-        int connectedCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
-        Debug.Log($"Client {clientId} ready ({readyClients.Count}/{connectedCount})");
+        Debug.Log($"Client {clientId} ready ({readyClients.Count}/{NetworkManager.Singleton.ConnectedClientsIds.Count})");
 
-        if (countdownRunning) return;
-
-        // SOLO
-        if (connectedCount == 1)
-        {
-            Debug.Log("[RaceManager] Un seul joueur connecté : on lance le compte à rebours.");
-            StartCoroutine(StartRaceCountdown());
-            return;
-        }
-
-        // MULTI
-        if (readyClients.Count >= connectedCount)
-        {
-            Debug.Log("[RaceManager] Tous les joueurs connectés sont prêts, on lance le compte à rebours.");
-            StartCoroutine(StartRaceCountdown());
-        }
+        // On essaye de lancer la course (si tous prêts + piste OK)
+        TryStartRace();
     }
 
     private void SpawnCarForClient(ulong clientId)
@@ -164,10 +170,21 @@ public class RaceManager : NetworkBehaviour
     {
         countdownRunning = true;
 
-        // On part de 3 → 2 → 1 → GO
+        // 1) On spawn ici les voitures pour TOUS les joueurs ready
+        foreach (var clientId in readyClients)
+        {
+            if (!playerCars.ContainsKey(clientId))
+            {
+                SpawnCarForClient(clientId);
+            }
+        }
+
+        // (optionnel) petit délai pour laisser le Netcode spawner chez les clients
+        yield return new WaitForSeconds(0.2f);
+
+        // 2) Compte à rebours 3-2-1-GO
         for (int t = 3; t > 0; t--)
         {
-            // Update côté serveur, propagé à tous
             countdownValue.Value = t;
             Debug.Log($"Course dans {t}...");
             yield return new WaitForSeconds(1f);
@@ -177,7 +194,7 @@ public class RaceManager : NetworkBehaviour
         countdownValue.Value = 0;  // 0 = GO!
         raceStarted.Value = true;
 
-        // Autoriser toutes les voitures à rouler
+        // 3) Autoriser toutes les voitures à rouler
         foreach (var kvp in playerCars)
         {
             if (kvp.Value != null)
@@ -186,7 +203,7 @@ public class RaceManager : NetworkBehaviour
             }
         }
 
-        // On cache le texte après 1 seconde
+        // 4) On cache le texte après 1 seconde
         yield return new WaitForSeconds(1f);
         countdownValue.Value = -1; // -1 = caché
         countdownRunning = false;
@@ -216,15 +233,18 @@ public class RaceManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        // si la piste n'est pas encore posée, on ne fait rien
-        if (carSpawnPoints == null || carSpawnPoints.Length == 0)
-            return;
+        // if (carSpawnPoints == null || carSpawnPoints.Length == 0)
+        //     return;
+        //
+        // if (!playerCars.ContainsKey(clientId))
+        // {
+        //     SpawnCarForClient(clientId);
+        // }
 
-        if (!playerCars.ContainsKey(clientId))
-        {
-            SpawnCarForClient(clientId);
-        }
+        // Maintenant : juste log si tu veux
+        Debug.Log($"[RaceManager] Client connecté : {clientId}");
     }
+
 
     private void OnDestroy()
     {
