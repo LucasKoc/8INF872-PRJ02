@@ -13,6 +13,19 @@ public class RaceManager : NetworkBehaviour
     [Tooltip("Liste des prefabs de voitures dans le même ordre que le menu de sélection.")]
     public GameObject[] carPrefabs;
 
+    [Header("Résultat de course")]
+    public NetworkVariable<bool> raceOver = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    public NetworkVariable<ulong> winnerClientId = new NetworkVariable<ulong>(
+        ulong.MaxValue,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     // choix de voiture par client : clientId -> index de voiture
     private Dictionary<ulong, int> playerCarChoices = new Dictionary<ulong, int>();
 
@@ -45,12 +58,31 @@ public class RaceManager : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    public void NotifyRaceFinished(ulong winnerId)
+    {
+        // Sécurité : cette méthode ne doit être exécutée que sur le serveur
+        if (!IsServer) return;
+
+        if (raceOver.Value) return; // on prend uniquement le premier
+
+        raceOver.Value = true;
+        winnerClientId.Value = winnerId;
+
+        Debug.Log($"[RaceManager] Course terminée. Gagnant = {winnerId}");
+    }
+
+
     // Appelé par ARPlacementController côté host
     public void RegisterTrack(LapCounter lc, Transform[] spawnPoints, float scale)
     {
         lapCounter     = lc;
         carSpawnPoints = spawnPoints;
         trackScale     = scale;
+
+        if (lapCounter != null)
+        {
+            lapCounter.raceManager = this;
+        }
 
         if (lc != null)
             circuitRef = lc.transform.root;
@@ -258,6 +290,9 @@ public class RaceManager : NetworkBehaviour
             countdownRunning = false;
             raceStarted.Value = false;
             countdownValue.Value = -1;
+
+            raceOver.Value = false;
+            winnerClientId.Value = ulong.MaxValue;
 
             // On écoute les nouveaux clients qui se connectent - NE DEVRAIS PAS ARRIVER PCQ READY AVANT
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;

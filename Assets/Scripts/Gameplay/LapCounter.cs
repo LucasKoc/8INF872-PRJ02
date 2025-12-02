@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 public class LapCounter : MonoBehaviour
 {
@@ -8,6 +9,9 @@ public class LapCounter : MonoBehaviour
     [Header("Debug (lecture seule)")]
     public int currentLap = 0;
     public bool raceFinished = false;
+
+    [Header("Race manager (optionnel)")]
+    public RaceManager raceManager;
 
     // est-ce qu'on a déjà franchi la ligne une première fois
     private bool hasStarted = false;
@@ -89,7 +93,17 @@ public class LapCounter : MonoBehaviour
             {
                 raceFinished = true;
                 Debug.Log("Course terminée !");
-                // Ici plus tard : appeler un écran de fin de course / retour lobby
+
+                if (raceManager != null &&
+                    NetworkManager.Singleton != null &&
+                    NetworkManager.Singleton.IsServer)
+                {
+                    var no = other.GetComponentInParent<NetworkObject>();
+                    if (no != null)
+                    {
+                        raceManager.NotifyRaceFinished(no.OwnerClientId);
+                    }
+                }
             }
         }
     }
