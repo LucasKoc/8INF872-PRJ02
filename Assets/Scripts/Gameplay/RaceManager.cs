@@ -10,7 +10,25 @@ public class RaceManager : NetworkBehaviour
     public LapCounter lapCounter;
 
     [Header("Voitures")]
-    public GameObject carPrefab;
+    [Tooltip("Liste des prefabs de voitures dans le même ordre que le menu de sélection.")]
+    public GameObject[] carPrefabs;
+
+    [Header("Résultat de course")]
+    public NetworkVariable<bool> raceOver = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    public NetworkVariable<ulong> winnerClientId = new NetworkVariable<ulong>(
+        ulong.MaxValue,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    // choix de voiture par client : clientId -> index de voiture
+    private Dictionary<ulong, int> playerCarChoices = new Dictionary<ulong, int>();
+
     private Transform[] carSpawnPoints;
     private Dictionary<ulong, SimpleCarController> playerCars =
         new Dictionary<ulong, SimpleCarController>();
@@ -40,12 +58,31 @@ public class RaceManager : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    public void NotifyRaceFinished(ulong winnerId)
+    {
+        // Sécurité : cette méthode ne doit être exécutée que sur le serveur
+        if (!IsServer) return;
+
+        if (raceOver.Value) return; // on prend uniquement le premier
+
+        raceOver.Value = true;
+        winnerClientId.Value = winnerId;
+
+        Debug.Log($"[RaceManager] Course terminée. Gagnant = {winnerId}");
+    }
+
+
     // Appelé par ARPlacementController côté host
     public void RegisterTrack(LapCounter lc, Transform[] spawnPoints, float scale)
     {
         lapCounter     = lc;
         carSpawnPoints = spawnPoints;
         trackScale     = scale;
+
+        if (lapCounter != null)
+        {
+            lapCounter.raceManager = this;
+        }
 
         if (lc != null)
             circuitRef = lc.transform.root;
@@ -90,10 +127,10 @@ public class RaceManager : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void SetReadyServerRpc(ServerRpcParams rpcParams = default)
+    public void SetReadyServerRpc(int carIndex, ServerRpcParams rpcParams = default)
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
-        Debug.Log($"[RaceManager] SetReadyServerRpc reçu de {clientId}. IsServer={IsServer}");
+        Debug.Log($"[RaceManager] SetReadyServerRpc reçu de {clientId} avec carIndex={carIndex}");
 
         if (raceStarted.Value)
         {
@@ -101,7 +138,21 @@ public class RaceManager : NetworkBehaviour
             return;
         }
 
-        // On marque ce client comme "ready"
+        // On clamp l'index pour éviter les bêtises
+        if (carPrefabs == null || carPrefabs.Length == 0)
+        {
+            Debug.LogError("[RaceManager] carPrefabs non configuré !");
+            carIndex = 0;
+        }
+        else
+        {
+            carIndex = Mathf.Clamp(carIndex, 0, carPrefabs.Length - 1);
+        }
+
+        // On mémorise le choix de voiture pour ce client
+        playerCarChoices[clientId] = carIndex;
+
+        // On marque ce client comme ready
         if (!readyClients.Add(clientId))
         {
             Debug.Log($"Client {clientId} était déjà ready.");
@@ -116,11 +167,6 @@ public class RaceManager : NetworkBehaviour
 
     private void SpawnCarForClient(ulong clientId)
     {
-        if (carPrefab == null)
-        {
-            Debug.LogError("[RaceManager] carPrefab n’est pas assigné !");
-            return;
-        }
         if (carSpawnPoints == null || carSpawnPoints.Length == 0)
         {
             Debug.LogError("[RaceManager] Aucun CarSpawnPoint enregistré !");
@@ -134,7 +180,28 @@ public class RaceManager : NetworkBehaviour
         Transform spawn = carSpawnPoints[index];
         Debug.Log($"[RaceManager] Spawn car pour client {clientId} au spawn index={index}, name={spawn.name}, pos={spawn.position}");
 
-        GameObject carObj = Instantiate(carPrefab, spawn.position, spawn.rotation);
+        int carIndex = 0;
+        if (!playerCarChoices.TryGetValue(clientId, out carIndex))
+        {
+            Debug.LogWarning($"[RaceManager] Pas de choix de voiture pour client {clientId}, on prend l'index 0.");
+            carIndex = 0;
+        }
+
+        if (carPrefabs == null || carPrefabs.Length == 0)
+        {
+            Debug.LogError("[RaceManager] carPrefabs non configuré, impossible de spawn !");
+            return;
+        }
+
+        if (carIndex < 0 || carIndex >= carPrefabs.Length)
+        {
+            Debug.LogWarning($"[RaceManager] carIndex {carIndex} hors borne, on clamp à 0.");
+            carIndex = 0;
+        }
+
+        GameObject prefab = carPrefabs[carIndex];
+        GameObject carObj = Instantiate(prefab, spawn.position, spawn.rotation);
+
         Debug.Log($"[RaceManager] Car {clientId} world pos après instantiate = {carObj.transform.position}");
         carObj.transform.localScale *= trackScale;
 
@@ -223,6 +290,9 @@ public class RaceManager : NetworkBehaviour
             countdownRunning = false;
             raceStarted.Value = false;
             countdownValue.Value = -1;
+
+            raceOver.Value = false;
+            winnerClientId.Value = ulong.MaxValue;
 
             // On écoute les nouveaux clients qui se connectent - NE DEVRAIS PAS ARRIVER PCQ READY AVANT
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
