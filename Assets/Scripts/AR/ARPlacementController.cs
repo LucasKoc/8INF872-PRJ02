@@ -119,11 +119,11 @@ public class ARPlacementController : MonoBehaviour
 
     public void PlaceCircuit()
     {
-        // if (!placementPoseIsValid)
-        // {
-        //     Debug.Log("Aucun plan valide sous le centre de l'écran.");
-        //     return;
-        // }
+        if (!placementPoseIsValid)
+        {
+            Debug.Log("Aucun plan valide sous le centre de l'écran.");
+            return;
+        }
 
         if (previewInstance != null)
         {
