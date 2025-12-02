@@ -35,6 +35,8 @@ public class voitures_choix_manager : MonoBehaviour
     [Header("Etat de sélection")]
     [SerializeField] private int indexSelectionne = 0;
 
+    [SerializeField] private menu_manager menuManager;
+
     [SerializeField] private publicite_manager pub_manager;
 
 
@@ -208,12 +210,26 @@ public class voitures_choix_manager : MonoBehaviour
 
     public void LancerJeuAvecVoitureSelectionnee()
     {
+        // Sécurité : voiture verrouillée → on ne fait rien
         if (!voituresDebloquees[indexSelectionne])
         {
             Debug.Log("Cette voiture est verrouillée, impossible de jouer avec.");
             return;
         }
 
-        // POUR LA SUITE : chargement de scène avec la voiture sélectionnée
+        // L'index est déjà sauvegardé dans MettreAJourAffichage(),
+        // donc rien de plus à faire ici pour les données.
+
+        Debug.Log("Lancement du lobby avec la voiture : " + voituresNoms[indexSelectionne]);
+
+        if (menuManager != null)
+        {
+            menuManager.OuvrirLobby();
+        }
+        else
+        {
+            Debug.LogWarning("menu_manager non assigné dans voitures_choix_manager.");
+        }
     }
+
 }

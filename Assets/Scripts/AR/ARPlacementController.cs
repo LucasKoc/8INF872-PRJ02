@@ -17,7 +17,7 @@ public class ARPlacementController : MonoBehaviour
     [Header("UI")] public Button placeButton;
     public Button resetButton;
     public Button readyButton;
-
+    public TMPro.TMP_Text placementInstructionsText;
 
     [Header("Circuit Properties")] public bool autoScaleCircuit = true;
     public float distanceFromCamera = 1f;
@@ -229,11 +229,14 @@ public class ARPlacementController : MonoBehaviour
             NetworkManager.Singleton.IsClient &&
             raceManager.IsSpawned)
         {
-            Debug.Log("[ARPlacement] Appel de SetReadyServerRpc()");
-            raceManager.SetReadyServerRpc();
+            int carIndex = PlayerPrefs.GetInt("index_voiture_selectionnee", 0);
+
+            Debug.Log($"[ARPlacement] Appel de SetReadyServerRpc(carIndex={carIndex})");
+            raceManager.SetReadyServerRpc(carIndex);
 
             if (readyButton != null) readyButton.interactable = false;
             if (resetButton != null) resetButton.interactable = false;
+            if (placementInstructionsText != null) placementInstructionsText.text = "";
         }
         else
         {

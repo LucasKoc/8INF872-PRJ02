@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class menu_manager : MonoBehaviour
 {
     [Header("Panels principaux")]
     [SerializeField] private GameObject panel_menu;
     [SerializeField] private GameObject panel_choix_voiture;
-    [SerializeField] private GameObject panel_lobby;
 
     [Header("Menu principal")]
     [SerializeField] private GameObject logo;
@@ -35,7 +35,6 @@ public class menu_manager : MonoBehaviour
     {
         if (panel_menu != null) panel_menu.SetActive(true);
         if (panel_choix_voiture != null) panel_choix_voiture.SetActive(false);
-        if (panel_lobby != null) panel_lobby.SetActive(false);
 
         FermerToutesLesVues();
 
@@ -129,7 +128,6 @@ public class menu_manager : MonoBehaviour
     {
         if (panel_menu != null) panel_menu.SetActive(true);
         if (panel_choix_voiture != null) panel_choix_voiture.SetActive(false);
-        if (panel_lobby != null) panel_lobby.SetActive(false);
 
         FermerToutesLesVues();
 
@@ -142,16 +140,11 @@ public class menu_manager : MonoBehaviour
 
         if (panel_menu != null) panel_menu.SetActive(false);
         if (panel_choix_voiture != null) panel_choix_voiture.SetActive(true);
-        if (panel_lobby != null) panel_lobby.SetActive(false);
 
     }
 
     public void OuvrirLobby()
     {
-        FermerToutesLesVues();
-
-        if (panel_menu != null) panel_menu.SetActive(false);
-        if (panel_choix_voiture != null) panel_choix_voiture.SetActive(false);
-        if (panel_lobby != null) panel_lobby.SetActive(true);
+        SceneManager.LoadScene("Lobby");
     }
 }

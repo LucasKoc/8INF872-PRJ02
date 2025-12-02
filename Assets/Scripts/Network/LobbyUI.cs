@@ -317,7 +317,7 @@ public class LobbyUI : NetworkBehaviour
         }
 
         // 3) Dans le MainMenuPanel -> revenir à la scène précédente (menu principal global)
-        // TODO : Envoyer vers le super-lobby lorsque celui-ci sera implémenté
+        SceneManager.LoadScene("SupperLobby");
         Debug.Log("BackButton : aucun panel spécial à quitter (MainMenu).");
     }
 

@@ -560,8 +560,9 @@ MonoBehaviour:
   voituresDebloquees: 01
   image_cadenas: {fileID: 330778375}
   bouton_deverrouiller: {fileID: 1397037247}
-  bouton_jouer: {fileID: 0}
+  bouton_jouer: {fileID: 1304060746}
   indexSelectionne: 0
+  menuManager: {fileID: 111394140}
   pub_manager: {fileID: 111394145}
 --- !u!82 &111394142
 AudioSource:

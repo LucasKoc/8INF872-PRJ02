@@ -638,6 +638,7 @@ MonoBehaviour:
   placeButton: {fileID: 669896403}
   resetButton: {fileID: 1836645300}
   readyButton: {fileID: 420795647}
+  placementInstructionsText: {fileID: 1652862445}
   autoScaleCircuit: 1
   distanceFromCamera: 1
 --- !u!4 &718701178
@@ -1304,6 +1305,26 @@ PrefabInstance:
       propertyPath: countdownText
       value: 
       objectReference: {fileID: 803907569}
+    - target: {fileID: 5742050617260532414, guid: e18315c9e90a547499e5bd16807a4997, type: 3}
+      propertyPath: carPrefabs.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5742050617260532414, guid: e18315c9e90a547499e5bd16807a4997, type: 3}
+      propertyPath: 'carPrefabs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 1639547128636666092, guid: d43765971f52a45a6b2c6fe91228440c, type: 3}
+    - target: {fileID: 5742050617260532414, guid: e18315c9e90a547499e5bd16807a4997, type: 3}
+      propertyPath: 'carPrefabs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 5000996467322625447, guid: 6054edf7e25b04da392cdfa366735611, type: 3}
+    - target: {fileID: 5742050617260532414, guid: e18315c9e90a547499e5bd16807a4997, type: 3}
+      propertyPath: 'carPrefabs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 5684084181578335185, guid: 36382fdf2027840b198d42969e2ff9b6, type: 3}
+    - target: {fileID: 5742050617260532414, guid: e18315c9e90a547499e5bd16807a4997, type: 3}
+      propertyPath: 'carPrefabs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 8745013234066994442, guid: 6c1dd55a925b24b9eb117d75c670e938, type: 3}
     - target: {fileID: 6300561152730410220, guid: e18315c9e90a547499e5bd16807a4997, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.01107
@@ -1373,7 +1394,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3028773395
+  GlobalObjectIdHash: 1703405332
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1881,7 +1902,7 @@ GameObject:
   - component: {fileID: 1652862446}
   - component: {fileID: 1652862445}
   m_Layer: 5
-  m_Name: CountdownText
+  m_Name: placementInstructionsText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
