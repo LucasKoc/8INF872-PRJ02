@@ -40,8 +40,6 @@ public class voitures_choix_manager : MonoBehaviour
 
     private void Start()
     {
-        PlayerPrefs.DeleteAll(); // A SUPPRIMER !!!! SOUVENIRS VOITURES DEVEROUILLEES
-
         if (voituresSprites == null || voituresSprites.Length == 0)
         {
             Debug.LogError("Aucune voiture définie dans voituresSprites !");

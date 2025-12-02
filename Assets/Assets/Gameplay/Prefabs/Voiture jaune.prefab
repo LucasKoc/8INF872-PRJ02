@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 7110712804524671628}
   - component: {fileID: 4400734507714128179}
   m_Layer: 0
-  m_Name: Car Yellow
+  m_Name: Voiture jaune
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

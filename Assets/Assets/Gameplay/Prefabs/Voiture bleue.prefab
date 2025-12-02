@@ -486,7 +486,7 @@ GameObject:
   - component: {fileID: 468840020649501212}
   - component: {fileID: 6659041836916992494}
   m_Layer: 0
-  m_Name: Car Blue
+  m_Name: Voiture bleue
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

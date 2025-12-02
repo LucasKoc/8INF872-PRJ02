@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2590023149617401194}
   - component: {fileID: 9032922148679362868}
   m_Layer: 0
-  m_Name: Car Red
+  m_Name: Voiture rouge
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
