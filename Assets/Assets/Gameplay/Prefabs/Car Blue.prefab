@@ -103,7 +103,7 @@ GameObject:
   - component: {fileID: 6063266389643568463}
   m_Layer: 0
   m_Name: Car Blue
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -487,7 +487,7 @@ GameObject:
   - component: {fileID: 6659041836916992494}
   m_Layer: 0
   m_Name: Car Blue
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
