@@ -126,9 +126,10 @@ public class RaceManager : NetworkBehaviour
             index = carSpawnPoints.Length - 1;
 
         Transform spawn = carSpawnPoints[index];
-        Debug.Log($"[RaceManager] Spawn car pour client {clientId} au spawn {index}");
+        Debug.Log($"[RaceManager] Spawn car pour client {clientId} au spawn index={index}, name={spawn.name}, pos={spawn.position}");
 
         GameObject carObj = Instantiate(carPrefab, spawn.position, spawn.rotation);
+        Debug.Log($"[RaceManager] Car {clientId} world pos après instantiate = {carObj.transform.position}");
         carObj.transform.localScale *= trackScale;
 
         // Récupérer le controller

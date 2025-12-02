@@ -1299,7 +1299,7 @@ PrefabInstance:
     - target: {fileID: 5742050617260532414, guid: e18315c9e90a547499e5bd16807a4997, type: 3}
       propertyPath: carPrefab
       value: 
-      objectReference: {fileID: 8127218697081779359, guid: 2405154c2515d459abec83710ad5c77b, type: 3}
+      objectReference: {fileID: 1639547128636666092, guid: d43765971f52a45a6b2c6fe91228440c, type: 3}
     - target: {fileID: 5742050617260532414, guid: e18315c9e90a547499e5bd16807a4997, type: 3}
       propertyPath: countdownText
       value: 

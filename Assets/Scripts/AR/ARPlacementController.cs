@@ -163,6 +163,14 @@ public class ARPlacementController : MonoBehaviour
                 if (sp != null) spawnPoints.Add(sp);
             }
 
+            Debug.Log($"[ARPlacement] Track enregistré : LapCounter={lc}, SpawnPoints={spawnPoints.Count}");
+            for (int i = 0; i < spawnPoints.Count; i++)
+            {
+                var sp = spawnPoints[i];
+                Debug.Log($"[ARPlacement] SpawnPoint {i} name={sp.name} pos={sp.position}");
+            }
+
+
             if (raceManager != null &&
                 NetworkManager.Singleton != null &&
                 NetworkManager.Singleton.IsServer)

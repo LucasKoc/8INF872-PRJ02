@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3028773395
+  GlobalObjectIdHash: 1325177667
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -72,7 +72,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RaceManager
   ShowTopMostFoldoutHeaderGroup: 1
   lapCounter: {fileID: 0}
-  carPrefab: {fileID: 8127218697081779359, guid: 2405154c2515d459abec83710ad5c77b, type: 3}
+  carPrefab: {fileID: 1740865480142414, guid: d43765971f52a45a6b2c6fe91228440c, type: 3}
   countdownText: {fileID: 0}
   countdownValue:
     m_InternalValue: -1
